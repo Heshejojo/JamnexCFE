@@ -17,7 +17,7 @@ class AgenteCfeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Agente CFE',
+      title: 'Jamnex',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -213,7 +213,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agente CFE'),
+        title: const Text('Jamnex'),
         actions: [
           Chip(
             label: Text(_status),

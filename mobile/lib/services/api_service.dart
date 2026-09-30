@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.85:8000/api',
+    defaultValue: 'http://10.14.64.15:8000/api',
   );
 
   String? _deviceToken;
