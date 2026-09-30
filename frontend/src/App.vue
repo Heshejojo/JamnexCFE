@@ -7,7 +7,7 @@
         </div>
         <div class="brand-copy">
           <small>Plataforma de control</small>
-          <div class="brand-title">Agente CFE</div>
+          <div class="brand-title">Jamnex</div>
         </div>
       </div>
 
