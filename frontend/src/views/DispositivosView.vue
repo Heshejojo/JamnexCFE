@@ -406,14 +406,14 @@ onBeforeUnmount(() => {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.7rem;
+  font-size: 0.73rem;
   color: #64748b;
   margin: 0 0 8px;
 }
 
 h2 {
   margin: 0;
-  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-size: clamp(1.6rem, 2vw, 2.1rem);
 }
 
 .primary-btn {
@@ -421,7 +421,8 @@ h2 {
   background: linear-gradient(135deg, #1E9B48, #34C98F);
   color: white;
   border-radius: 10px;
-  padding: 10px 16px;
+  padding: 11px 17px;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
@@ -439,7 +440,8 @@ h2 {
   background: white;
   color: #475569;
   border-radius: 10px;
-  padding: 9px 14px;
+  padding: 10px 15px;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;

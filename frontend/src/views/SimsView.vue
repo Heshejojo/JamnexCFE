@@ -399,13 +399,13 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 
 .topbar h2 {
   margin: 6px 0 0;
-  font-size: 1.9rem;
+  font-size: 2.05rem;
   font-weight: 800;
   color: #0f172a;
 }
@@ -448,7 +448,8 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, #1E9B48, #34C98F);
   color: white;
   border-radius: 12px;
-  padding: 10px 16px;
+  padding: 11px 17px;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 10px 18px rgba(37, 99, 235, 0.16);
@@ -466,7 +467,8 @@ onBeforeUnmount(() => {
   background: white;
   color: #475569;
   border-radius: 10px;
-  padding: 9px 14px;
+  padding: 10px 15px;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -483,7 +485,8 @@ onBeforeUnmount(() => {
   background: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
   border-radius: 10px;
-  padding: 9px 12px;
+  padding: 10px 13px;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.18s ease, filter 0.18s ease;
