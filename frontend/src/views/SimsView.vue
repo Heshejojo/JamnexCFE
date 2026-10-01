@@ -452,6 +452,13 @@ onBeforeUnmount(() => {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 10px 18px rgba(37, 99, 235, 0.16);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px rgba(30, 155, 72, 0.22);
+  filter: brightness(1.02);
 }
 
 .secondary-btn {
@@ -462,7 +469,15 @@ onBeforeUnmount(() => {
   padding: 9px 14px;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
+
+.secondary-btn:hover {
+  transform: translateY(-1px);
+  border-color: #bfd0e7;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+}
+
 .delete-btn {
   border: 0;
   background: rgba(239, 68, 68, 0.12);
@@ -471,6 +486,12 @@ onBeforeUnmount(() => {
   padding: 9px 12px;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.delete-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 .stats-grid {
   display: grid;

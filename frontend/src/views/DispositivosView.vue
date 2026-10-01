@@ -407,6 +407,13 @@ h2 {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(30, 155, 72, 0.22);
+  filter: brightness(1.02);
 }
 
 .secondary-btn {
@@ -417,6 +424,13 @@ h2 {
   padding: 9px 14px;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.secondary-btn:hover {
+  transform: translateY(-1px);
+  border-color: #b7c9de;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
 }
 
 .modal-backdrop {
@@ -626,6 +640,12 @@ h2 {
   font-weight: 700;
   cursor: pointer;
   font-size: 0.8rem;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.detail-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .revoke-btn {
@@ -637,6 +657,12 @@ h2 {
   font-weight: 700;
   cursor: pointer;
   font-size: 0.8rem;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.revoke-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .empty-card {
