@@ -61,6 +61,7 @@
               <span class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">
                 {{ selectedSim.activo ? 'Activa' : 'Inactiva' }}
               </span>
+              <button class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedSim = null">Cerrar</button>
             </div>
           </div>
