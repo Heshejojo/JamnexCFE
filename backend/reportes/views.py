@@ -70,7 +70,7 @@ class SimMonthlyExportView(APIView):
         sheet.title = 'Resumen SIM'
 
         # Resumen del mes
-        sheet.append(['Fecha', 'Serial dispositivo', 'Datos móviles usados en el mes(MB)', 'Operador', 'ICCID', 'Número telefónico'])
+        sheet.append(['Fecha', 'Serial dispositivo', 'Datos móviles usados en el mes (MB)', 'Operador', 'ICCID', 'Número telefónico'])
         _style_header(sheet[sheet.max_row])
         sheet.append([
             f'{year}-{month:02d}',
@@ -83,7 +83,7 @@ class SimMonthlyExportView(APIView):
 
         # Detalle día por día
         sheet.append([])
-        sheet.append(['Día', 'Datos móviles usados (MB)', 'Acumulado del mes (MB)'])
+        sheet.append(['Día', 'Datos móviles usados en el día (MB)', 'Acumulado del mes (MB)'])
         _style_header(sheet[sheet.max_row])
         acumulado = 0
         for day in range(1, _last_day(year, month) + 1):
@@ -97,8 +97,8 @@ class SimMonthlyExportView(APIView):
         for cell in sheet[sheet.max_row]:
             cell.font = Font(bold=True)
 
-        for column in ('A', 'B', 'C', 'D', 'E', 'F'):
-            sheet.column_dimensions[column].width = 26
+        for column, width in {'A': 26, 'B': 38, 'C': 38, 'D': 26, 'E': 26, 'F': 26}.items():
+            sheet.column_dimensions[column].width = width
 
         output = BytesIO()
         workbook.save(output)
@@ -133,7 +133,7 @@ class DevicesMonthlyExportView(APIView):
         # Hoja 1: resumen del mes por dispositivo
         sheet = workbook.active
         sheet.title = 'Dispositivos'
-        sheet.append(['Fecha', 'Serial', 'Modelo', 'Fabricante', 'Estado', 'Datos móviles usados (MB)', 'ICCID', 'IMEI'])
+        sheet.append(['Fecha', 'Serial', 'Modelo', 'Fabricante', 'Estado', 'Datos móviles usados en el mes (MB)', 'ICCID', 'IMEI'])
         _style_header(sheet[1])
 
         iccids = {}
@@ -149,10 +149,11 @@ class DevicesMonthlyExportView(APIView):
         sheet.freeze_panes = 'A2'
         for column in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'):
             sheet.column_dimensions[column].width = 25
+        sheet.column_dimensions['F'].width = 38
 
         # Hoja 2: día por día, por dispositivo
         daily = workbook.create_sheet('Consumo diario')
-        daily.append(['Día', 'Serial', 'Modelo', 'ICCID', 'Datos móviles usados (MB)'])
+        daily.append(['Día', 'Serial', 'Modelo', 'ICCID', 'Datos móviles usados en el día (MB)'])
         _style_header(daily[1])
         for device in dispositivos:
             for day in range(1, _last_day(year, month) + 1):
@@ -166,7 +167,7 @@ class DevicesMonthlyExportView(APIView):
         daily.freeze_panes = 'A2'
         for column in ('A', 'B', 'C', 'D', 'E'):
             daily.column_dimensions[column].width = 26
-
+        daily.column_dimensions['E'].width = 38
         output = BytesIO()
         workbook.save(output)
         record_action(request, 'EXPORTAR', 'dispositivos', '', f'Reporte mensual dispositivos {year}-{month:02d}')
