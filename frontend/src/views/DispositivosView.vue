@@ -202,10 +202,28 @@ function formatDuration(minutes) {
   return `${Math.round(total)} min`;
 }
 
+function formatBatteryState(state) {
+  const normalized = String(state || '').trim().toUpperCase();
+
+  switch (normalized) {
+    case 'CARGANDO':
+      return 'Cargando';
+    case 'DESCARGANDO':
+      return 'No cargando';
+    case 'CARGADA':
+      return 'Carga completa';
+    case 'DESCONOCIDO':
+    case 'DESCONOCIDA':
+      return 'Sin datos';
+    default:
+      return state || 'Sin datos';
+  }
+}
+
 function getBatteryText(deviceId) {
   const battery = deviceDetails.value[deviceId]?.battery;
   if (!battery) return 'Sin datos';
-  return `${battery.porcentaje ?? 0}% · ${battery.estado || 'Desconocido'}`;
+  return `${battery.porcentaje ?? 0}% · ${formatBatteryState(battery.estado)}`;
 }
 
 function getRamText(deviceId) {
