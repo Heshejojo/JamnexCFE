@@ -71,14 +71,14 @@
           </div>
 
           <div class="device-summary">
-            <div class="device-badge sim-badge-compact">
+            <div class="device-badge sim-badge-compact" style="width: 180px; min-width: 180px; flex: 0 0 180px;">
               <span class="device-icon secondary">◎</span>
               <div>
                 <small>Operadora</small>
                 <strong>{{ selectedSim.operador_nombre || 'Sin operador' }}</strong>
               </div>
             </div>
-            <div class="device-badge sim-badge-wide">
+            <div class="device-badge sim-badge-wide" style="flex: 1 1 0; min-width: 260px;">
               <span class="device-icon">▤</span>
               <div>
                 <small>Número de teléfono</small>
@@ -800,13 +800,13 @@ onBeforeUnmount(() => {
 }
 
 .sim-badge-compact {
-  flex: 0 0 180px;
-  min-width: 180px;
+  flex: 0 0 170px;
+  min-width: 170px;
 }
 
 .sim-badge-wide {
   flex: 1 1 0;
-  min-width: 260px;
+  min-width: 240px;
 }
 
 .device-icon {
