@@ -12,7 +12,6 @@
           <i></i>{{ loadError ? 'Sin conexión' : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
         <span v-if="selectedSim" class="live-status active">● Activa</span>
-        <button v-if="selectedSim" class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
         <button class="primary-btn" :disabled="loading" @click="loadSims">Actualizar</button>
       </div>
     </header>
