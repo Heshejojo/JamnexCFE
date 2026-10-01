@@ -1242,4 +1242,24 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   word-break: normal;
 }
+
+/* ===== Tamaño de letra uniforme en Información técnica ===== */
+.metric-kicker,
+.summary-card .metric-kicker,
+.detail-item span:not(.detail-icon) {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.summary-card strong,
+.detail-item strong,
+.detail-item strong.uuid {
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.3;
+  font-family: inherit;
+}
 </style>
