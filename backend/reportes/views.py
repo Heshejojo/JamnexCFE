@@ -70,7 +70,7 @@ class SimMonthlyExportView(APIView):
         sheet.title = 'Resumen SIM'
 
         # Resumen del mes
-        sheet.append(['Fecha', 'Serial dispositivo', 'Datos móviles usados (MB)', 'Operador', 'ICCID', 'Número telefónico'])
+        sheet.append(['Fecha', 'Serial dispositivo', 'Datos móviles usados en el mes(MB)', 'Operador', 'ICCID', 'Número telefónico'])
         _style_header(sheet[sheet.max_row])
         sheet.append([
             f'{year}-{month:02d}',

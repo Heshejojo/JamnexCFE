@@ -1,5 +1,0 @@
-REPORTE MENSUAL DE SIM					
-Mes	2026-09				
-					
-Fecha	Serial dispositivo	Datos móviles usados (MB)	Operador	ICCID	Número telefónico
-2026-09		0	TELCEL	8952020320430378010F	+52 639
