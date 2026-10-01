@@ -22,14 +22,14 @@
         </div>
 
         <div class="search-box">
-          <input v-model="query" placeholder="Buscar modelo, UUID o serial" />
+          <input v-model="query" placeholder="Buscar modelo, UUID o número de serie" />
         </div>
 
         <div v-if="filteredItems.length" class="list">
           <div v-for="item in filteredItems" :key="item.id" class="item-row" :class="{ active: selectedDevice && selectedDevice.id === item.id }">
             <div class="item-info">
               <strong>{{ item.modelo || item.device_uuid }}</strong>
-              <small>{{ item.fabricante || 'Sin info' }} · {{ item.serial || 'Sin serial' }}</small>
+              <small>{{ item.fabricante || 'Sin info' }} · {{ item.serial || 'Sin número de serie' }}</small>
             </div>
             <div class="row-actions">
               <span class="status-badge" :class="item.activo ? 'active' : 'inactive'">
@@ -60,6 +60,7 @@
               <span class="live-status" :class="selectedDevice.activo ? 'active' : 'inactive'">
                 {{ selectedDevice.activo ? 'En línea' : 'Fuera de línea' }}
               </span>
+              <button v-if="selectedDevice" class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedDevice = null">Cerrar</button>
             </div>
           </div>
@@ -101,7 +102,7 @@
             <div class="detail-item"><span class="detail-icon">♧</span><span>Fabricante</span><strong>{{ selectedDevice.fabricante || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">♟</span><span>Android</span><strong>{{ selectedDevice.version_android || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">&lt;/&gt;</span><span>SDK</span><strong>{{ selectedDevice.android_sdk || 'No disponible' }}</strong></div>
-            <div class="detail-item"><span class="detail-icon">▥</span><span>Serial</span><strong>{{ selectedDevice.serial || 'Restringido / no disponible' }}</strong></div>
+            <div class="detail-item"><span class="detail-icon">▥</span><span>Número de serie</span><strong>{{ selectedDevice.serial || 'Restringido / no disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▯</span><span>IMEI 1</span><strong>{{ selectedDevice.imei_1 || 'Restringido / no disponible' }}</strong></div>
             <div class="detail-item status-detail"><span class="detail-icon">✓</span><span>Estado</span><strong :class="selectedDevice.activo ? 'active-text' : 'inactive-text'">{{ selectedDevice.activo ? 'Activo' : 'Inactivo' }}</strong></div>
             <div class="detail-item uuid-detail"><span class="detail-icon">◎</span><span>UUID</span><strong class="uuid">{{ selectedDevice.device_uuid || 'No disponible' }}</strong></div>
@@ -135,11 +136,34 @@
         </div>
       </aside>
     </div>
+
+    <div v-if="editingDevice" class="modal-backdrop" @click.self="editingDevice = false">
+      <form class="edit-modal" @submit.prevent="saveEdit">
+        <div class="modal-heading">
+          <div><p class="eyebrow">Editar dispositivo</p><h3>{{ editForm.modelo || editForm.device_uuid || 'Dispositivo' }}</h3></div>
+          <button type="button" class="modal-close" aria-label="Cerrar" @click="editingDevice = false">×</button>
+        </div>
+
+        <label>Fabricante<input v-model="editForm.fabricante" type="text" /></label>
+        <label>Modelo<input v-model="editForm.modelo" type="text" /></label>
+        <label>UUID<input v-model="editForm.device_uuid" type="text" /></label>
+        <label>Versión Android<input v-model="editForm.version_android" type="text" /></label>
+        <label>SDK<input v-model="editForm.android_sdk" type="number" min="0" /></label>
+        <label>IMEI 1<input v-model="editForm.imei_1" type="text" /></label>
+        <label>Número de serie<input v-model="editForm.serial" type="text" /></label>
+        <label class="edit-check"><input v-model="editForm.activo" type="checkbox" /> Dispositivo activo</label>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" @click="editingDevice = false">Cancelar</button>
+          <button type="submit" class="primary-btn" :disabled="savingDeviceEdit">{{ savingDeviceEdit ? 'Guardando...' : 'Guardar cambios' }}</button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import api from '../services/api';
 
 const items = ref([]);
@@ -149,6 +173,18 @@ const deviceDetails = ref({});
 const loadError = ref('');
 const loading = ref(false);
 const lastSync = ref('nunca');
+const editingDevice = ref(false);
+const savingDeviceEdit = ref(false);
+const editForm = reactive({
+  device_uuid: '',
+  fabricante: '',
+  modelo: '',
+  version_android: '',
+  android_sdk: '',
+  serial: '',
+  imei_1: '',
+  activo: true,
+});
 const filteredItems = computed(() => 
   items.value.filter((item) => 
     `${item.device_uuid} ${item.fabricante} ${item.modelo} ${item.serial}`.toLowerCase().includes(query.value.toLowerCase())
@@ -277,6 +313,49 @@ async function loadData() {
   }
 }
 
+function startEdit() {
+  if (!selectedDevice.value) return;
+
+  Object.assign(editForm, {
+    device_uuid: selectedDevice.value.device_uuid || '',
+    fabricante: selectedDevice.value.fabricante || '',
+    modelo: selectedDevice.value.modelo || '',
+    version_android: selectedDevice.value.version_android || '',
+    android_sdk: selectedDevice.value.android_sdk ?? '',
+    serial: selectedDevice.value.serial || '',
+    imei_1: selectedDevice.value.imei_1 || '',
+    activo: Boolean(selectedDevice.value.activo),
+  });
+
+  editingDevice.value = true;
+}
+
+async function saveEdit() {
+  if (!selectedDevice.value) return;
+
+  savingDeviceEdit.value = true;
+  try {
+    const payload = {
+      ...editForm,
+      android_sdk: editForm.android_sdk === '' || editForm.android_sdk === null ? null : Number(editForm.android_sdk),
+    };
+
+    await api.put(`/dispositivos/${selectedDevice.value.id}/`, payload);
+    editingDevice.value = false;
+    await loadData();
+
+    selectedDevice.value = items.value.find((item) => item.id === selectedDevice.value.id) || null;
+    if (selectedDevice.value) {
+      loadDeviceDetails(selectedDevice.value.id);
+    }
+  } catch (error) {
+    console.error('Error al guardar el dispositivo:', error);
+    window.alert('No se pudo guardar la información del dispositivo.');
+  } finally {
+    savingDeviceEdit.value = false;
+  }
+}
+
 async function deleteDevice(item) {
   const nombre = item.modelo || item.device_uuid || 'este dispositivo';
   const confirmar = window.confirm(`¿Seguro que deseas eliminar ${nombre}?\n\nEsta acción no se puede deshacer.`);
@@ -358,6 +437,89 @@ h2 {
   padding: 9px 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 30;
+}
+
+.edit-modal {
+  width: min(100%, 520px);
+  background: white;
+  border: 1px solid #dbe5f0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 14px;
+}
+
+.modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-heading h3 {
+  margin: 0;
+}
+
+.modal-close {
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.edit-modal label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.edit-modal input {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid #d8e2ef;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.edit-modal input:focus {
+  outline: none;
+  border-color: #1E9B48;
+  box-shadow: 0 0 0 0.18rem rgba(30, 155, 72, 0.12);
+}
+
+.edit-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  color: #0f172a !important;
+}
+
+.edit-check input {
+  width: auto;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .device-layout {
