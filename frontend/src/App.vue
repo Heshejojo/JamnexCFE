@@ -95,7 +95,7 @@ function logoutSession() {
 .app-shell {
   display: flex;
   min-height: 100vh;
-  background: #F0F2F8;
+  background: linear-gradient(180deg, #eef4f9 0%, #f5f8fc 100%);
 }
 
 .sidebar {
@@ -106,6 +106,7 @@ function logoutSession() {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  box-shadow: 12px 0 30px rgba(10, 18, 28, 0.14);
 }
 
 .brand-block {
@@ -178,12 +179,12 @@ function logoutSession() {
   color: rgba(255,255,255,0.8);
   min-height: 44px;
   padding: 11px 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   gap: 9px;
   font-weight: 600;
-  transition: 0.2s ease;
+  transition: transform 0.18s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-item span {
@@ -195,9 +196,10 @@ function logoutSession() {
 
 .nav-item:hover,
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(0, 145, 105, 0.52), rgba(255,255,255,0.08));
+  background: linear-gradient(135deg, rgba(30, 155, 72, 0.68), rgba(255,255,255,0.08));
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12), 0 8px 18px rgba(30, 155, 72, 0.18);
+  transform: translateX(2px);
 }
 
 .nav-item.active::after {
@@ -248,17 +250,19 @@ function logoutSession() {
 .logout-btn {
   width: 100%;
   border: 0;
-  background: rgba(0, 127, 95, 0.18);
+  background: linear-gradient(135deg, rgba(23, 162, 98, 0.80), rgba(31, 203, 158, 0.80));
   color: white;
   border-radius: 10px;
   padding: 10px 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: 0.2s ease;
+  box-shadow: 0 10px 18px rgba(30, 155, 72, 0.2);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
 .logout-btn:hover {
-  background: rgba(0, 127, 95, 0.3);
+  filter: brightness(1.04);
+  box-shadow: 0 12px 22px rgba(30, 155, 72, 0.28);
 }
 
 .main-panel {
@@ -266,6 +270,7 @@ function logoutSession() {
   padding: 24px;
   min-width: 0;
   overflow-x: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0));
 }
 
 .auth-wrapper {
