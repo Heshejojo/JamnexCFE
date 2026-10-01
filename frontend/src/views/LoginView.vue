@@ -8,6 +8,9 @@
         </div>
 
         <div class="aside-copy">
+          <div class="logo-plate">
+            <img class="brand-logo" src="/images/Logo1.jpg" alt="Jamnex" />
+          </div>
           <h1>JAMNEX</h1>
           <p>Monitorea dispositivos y líneas móviles desde un solo lugar.</p>
           <ul class="aside-features">
@@ -21,8 +24,6 @@
       </section>
 
       <section class="login-content">
-        <img class="brand-logo" src="/images/Logo1.jpg" alt="Jamnex" />
-
         <div class="welcome-copy">
           <span class="form-kicker">Acceso</span>
           <h2>Bienvenido</h2>
@@ -120,7 +121,7 @@ async function submitLogin() {
 .login-aside {
   position: relative;
   display: flex;
-  min-height: 560px;
+  min-height: 620px;
   flex-direction: column;
   justify-content: space-between;
   padding: 40px 36px;
@@ -228,15 +229,23 @@ async function submitLogin() {
   padding: 48px 58px;
 }
 
+.logo-plate {
+  width: 100%;
+  max-width: 270px;
+  margin: 0 0 28px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
 .brand-logo {
   display: block;
-  width: auto;
-  height: 90px;
-  max-width: 100%;
-  margin: 0 0 30px;
+  width: 100%;
+  height: auto;
+  max-height: 150px;
   object-fit: contain;
-  object-position: left center;
-  mix-blend-mode: multiply;
+  object-position: center;
 }
 
 .welcome-copy {
@@ -347,6 +356,6 @@ async function submitLogin() {
   .aside-features { display: none; }
 
   .login-content { padding: 30px 22px 28px; }
-  .brand-logo { height: 70px; }
+  .logo-plate { max-width: 200px; margin-bottom: 16px; }
 }
 </style>
