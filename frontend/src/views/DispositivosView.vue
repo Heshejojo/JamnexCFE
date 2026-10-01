@@ -1177,4 +1177,38 @@ h2 {
   .crud-page::before { left: 12px; }
   .page-header h2 { font-size: 1.7rem; }
 }
+/* ===== Tarjetas sin color en Ficha técnica ===== */
+.summary-card,
+.summary-card.battery,
+.summary-card.ram,
+.summary-card.storage,
+.summary-card.network,
+.detail-item,
+.status-detail,
+.uuid-detail {
+  background: #fff;
+  border-color: #DCE3EE;
+}
+
+.summary-icon,
+.summary-card.battery .summary-icon,
+.summary-card.ram .summary-icon,
+.summary-card.storage .summary-icon,
+.summary-card.network .summary-icon,
+.detail-icon,
+.status-detail .detail-icon,
+.uuid-detail .detail-icon,
+.status-detail span.detail-icon,
+.uuid-detail span.detail-icon {
+  background: #F4F6FA;
+  color: #5B6B82;
+}
+
+.status-detail span:not(.detail-icon) {
+  color: #5B6B82;
+}
+
+.status-detail strong {
+  color: #121A2B;
+}
 </style>
