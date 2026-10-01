@@ -246,7 +246,7 @@ function totalUsed(sim) {
 
 function monthlyUsed(sim) {
   return consumptionRecords.value
-    .filter((item) => item.sim === sim?.id && item.fecha?.slice(0, 7) === selectedMonth.value)
+    .filter((item) => item.sim === sim?.id && item.periodo === 'diario' && item.fecha?.slice(0, 7) === selectedMonth.value)
     .reduce((sum, item) => sum + Number(item.consumo_datos_movil || 0), 0);
 }
 
