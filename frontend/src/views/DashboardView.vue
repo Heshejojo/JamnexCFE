@@ -20,7 +20,7 @@
       <div class="stat-card stat-devices"><div class="stat-icon">▣</div><div class="stat-body"><span>Dispositivos</span><strong>{{ metrics.devices }}</strong><small>Total de dispositivos registrados</small></div></div>
       <div class="stat-card stat-sims"><div class="stat-icon">▤</div><div class="stat-body"><span>SIMs</span><strong>{{ metrics.sims }}</strong><small>Total de SIMs activas</small></div></div>
       <div class="stat-card stat-online"><div class="stat-icon">▥</div><div class="stat-body"><span>En línea</span><strong>{{ metrics.connected }}</strong><small>Dispositivos conectados</small></div></div>
-      <div class="stat-card stat-data"><div class="stat-icon">▤</div><div class="stat-body"><span>Datos móviles usados</span><strong>{{ formatMb(metrics.mobile) }}</strong><small>Consumo total del periodo</small></div></div>
+      <div class="stat-card stat-data"><div class="stat-icon">▤</div><div class="stat-body"><span>Datos móviles usados</span><strong>{{ formatMb(metrics.mobile) }}</strong><small>Consumo total por mes</small></div></div>
     </section>
 
     <section class="command-grid">
@@ -29,14 +29,23 @@
         <strong class="hero-value">{{ formatMb(metrics.mobile) }}</strong>
         <p>{{ metrics.sims }} SIM{{ metrics.sims === 1 ? '' : 's' }} activa{{ metrics.sims === 1 ? '' : 's' }}</p>
         <div class="hero-chart"><span v-for="(bar, i) in weekBars" :key="i" :style="{ height: `${bar.height}px` }" :title="`${bar.label}: ${formatMb(bar.value)}`"></span></div>
-        <div class="hero-footer"><span>Últimos 7 días</span><span class="hero-note">✓ Sin consumo crítico</span></div>
+       <div class="hero-footer"><span>Últimos 7 días</span><span class="hero-note">{{ alerts.length ? `⚠ ${alerts.length} alerta${alerts.length === 1 ? '' : 's'}` : '✓ Sin alertas' }}</span></div>
       </div>
+
 
       <div class="attention-panel">
         <div class="attention-heading"><div><span class="hero-kicker">♧ &nbsp; Atención</span><h3>SIM con mayor consumo</h3></div><router-link to="/sims">Ver todas →</router-link></div>
         <div class="attention-main"><div class="attention-icon">▥</div><div><strong>{{ topSim.label }}</strong><p>{{ topSim.value ? 'Línea con mayor consumo en el periodo.' : 'No se ha registrado consumo en el periodo.' }}</p><b>+{{ formatMb(topSim.value) }}</b><small>{{ formatMb(topSim.value) }}</small></div></div>
         <div class="attention-footer">ⓘ &nbsp; El consumo de datos móviles se actualizará en tiempo real según la actividad de los dispositivos.</div>
       </div>
+    </section>
+
+    <section class="alerts-panel">
+      <div class="alerts-heading"><span class="hero-kicker">⚠ &nbsp; Alertas</span><h3>Requieren atención</h3></div>
+      <ul v-if="alerts.length" class="alerts-list">
+        <li v-for="(alert, i) in alerts" :key="i" :class="alert.level">{{ alert.text }}</li>
+      </ul>
+      <p v-else class="alerts-ok">✓ Todo en orden: ningún equipo ni SIM necesita atención.</p>
     </section>
   </div>
 </template>
@@ -50,6 +59,7 @@ const lastSync = ref('nunca');
 const syncError = ref(false);
 const topSim = ref({ label: 'Sin datos', value: 0 });
 const weekBars = ref(Array.from({ length: 7 }, () => ({ label: '', value: 0, height: 5 })));
+const alerts = ref([]);
 const todayLabel = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
 
@@ -61,12 +71,14 @@ async function loadDashboard() {
   loading.value = true;
   syncError.value = false;
   try {
-    const [devicesResponse, simsResponse, consumptionResponse] = await Promise.all([
-      api.get('/dispositivos/'),
-      api.get('/sims/'),
-      api.get('/consumos/'),
-    ]);
-
+    
+    const [devicesResponse, simsResponse, consumptionResponse, batteryResponse] = await Promise.all([
+  api.get('/dispositivos/'),
+  api.get('/sims/'),
+  api.get('/consumos/'),
+  api.get('/bateria/').catch(() => ({ data: [] })),
+]);
+    const batteries = asList(batteryResponse.data);
     const devices = asList(devicesResponse.data);
     const sims = asList(simsResponse.data);
     const consumption = asList(consumptionResponse.data);
@@ -119,6 +131,33 @@ async function loadDashboard() {
       label: sim?.numero_telefonico || sim?.operador_nombre || (topSimId === 'Sin asignar' ? 'Sin SIM asignada' : `SIM ${topSimId}`),
       value: topSimValue,
     };
+    const newAlerts = [];
+    const now = Date.now();
+    devices.forEach((device) => {
+      const name = device.modelo || device.device_uuid;
+      const last = device.ultimo_contacto ? new Date(device.ultimo_contacto).getTime() : null;
+      if (!last) {
+        newAlerts.push({ level: 'warn', text: `${name} nunca ha reportado` });
+      } else if (now - last > 24 * 60 * 60 * 1000) {
+        newAlerts.push({ level: 'danger', text: `${name} lleva más de 24 h sin reportar` });
+      }
+      const battery = batteries
+        .filter((entry) => Number(entry.dispositivo) === Number(device.id))
+        .sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora))[0];
+      if (battery && battery.porcentaje <= 20 && battery.estado !== 'CARGANDO') {
+        newAlerts.push({ level: 'warn', text: `${name} con batería baja (${battery.porcentaje}%)` });
+      }
+    });
+    sims.forEach((item) => {
+      const pct = ((consumptionBySim[item.id] || 0) / 2048) * 100;
+      if (pct >= 80) {
+        newAlerts.push({
+          level: pct >= 100 ? 'danger' : 'warn',
+          text: `${item.numero_telefonico || `SIM ${item.id}`} lleva ${pct.toFixed(0)}% del límite de 2 GB`,
+        });
+      }
+    });
+    alerts.value = newAlerts;
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
   } catch (error) {
     console.error(error);
@@ -700,4 +739,12 @@ onBeforeUnmount(() => {
   .quick-metric span, .quick-metric small { font-size: 0.65rem; }
 }
 .hero-chart span { max-width: 22px; }
+.alerts-panel { padding: 20px; border: 1px solid #DCE3EE; border-radius: 10px; background: #fff; box-shadow: 0 6px 18px rgba(0, 67, 49, 0.05); }
+.alerts-heading .hero-kicker { color: #1E9B48; }
+.alerts-heading h3 { margin: 6px 0 12px; color: #121A2B; font-size: 1rem; }
+.alerts-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.alerts-list li { padding: 10px 12px; border-left: 3px solid; border-radius: 6px; font-size: 0.82rem; font-weight: 600; }
+.alerts-list li.warn { background: #fff8e8; border-color: #f59e0b; color: #92400e; }
+.alerts-list li.danger { background: #fff0ee; border-color: #ef4444; color: #b42318; }
+.alerts-ok { margin: 0; color: #167A39; font-size: 0.85rem; font-weight: 700; }
 </style>
