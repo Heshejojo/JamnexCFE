@@ -28,7 +28,7 @@
         <div class="hero-heading"><div><span class="hero-kicker">▥ &nbsp; Red móvil</span><h3>Consumo acumulado</h3></div><span class="hero-period">◷ &nbsp; Este mes</span></div>
         <strong class="hero-value">{{ formatMb(metrics.mobile) }}</strong>
         <p>{{ metrics.sims }} SIM{{ metrics.sims === 1 ? '' : 's' }} activa{{ metrics.sims === 1 ? '' : 's' }}</p>
-        <div class="hero-chart" aria-hidden="true"><span v-for="day in 7" :key="day" :style="{ height: `${metrics.mobile ? 20 + (day * 5) : 5}px` }"></span></div>
+        <div class="hero-chart"><span v-for="(bar, i) in weekBars" :key="i" :style="{ height: `${bar.height}px` }" :title="`${bar.label}: ${formatMb(bar.value)}`"></span></div>
         <div class="hero-footer"><span>Últimos 7 días</span><span class="hero-note">✓ Sin consumo crítico</span></div>
       </div>
 
@@ -49,6 +49,7 @@ const loading = ref(false);
 const lastSync = ref('nunca');
 const syncError = ref(false);
 const topSim = ref({ label: 'Sin datos', value: 0 });
+const weekBars = ref(Array.from({ length: 7 }, () => ({ label: '', value: 0, height: 5 })));
 const todayLabel = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
 
@@ -65,25 +66,59 @@ async function loadDashboard() {
       api.get('/sims/'),
       api.get('/consumos/'),
     ]);
-    
+
     const devices = asList(devicesResponse.data);
     const sims = asList(simsResponse.data);
     const consumption = asList(consumptionResponse.data);
-    
+
+    const dayKey = (date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const monthKey = dayKey(new Date()).slice(0, 7);
+
+    // Solo consumo diario; el total del dashboard cuenta solo el mes actual
+    const daily = consumption.filter((item) => item.periodo === 'diario' && item.fecha);
+    const monthly = daily.filter((item) => dayKey(new Date(item.fecha)).slice(0, 7) === monthKey);
+
     metrics.devices = devices.length;
     metrics.sims = sims.length;
     metrics.connected = devices.filter((item) => item.activo).length;
-    metrics.mobile = consumption.reduce((sum, item) => sum + Number(item.consumo_datos_movil || 0), 0);
-    metrics.wifi = consumption.reduce((sum, item) => sum + Number(item.consumo_wifi || 0), 0);
+    metrics.mobile = monthly.reduce((sum, item) => sum + Number(item.consumo_datos_movil || 0), 0);
+    metrics.wifi = monthly.reduce((sum, item) => sum + Number(item.consumo_wifi || 0), 0);
     metrics.consumption = metrics.mobile;
-    const consumptionBySim = consumption.reduce((result, item) => {
+
+    // Barras reales de los últimos 7 días
+    const byDay = {};
+    daily.forEach((item) => {
+      const key = dayKey(new Date(item.fecha));
+      byDay[key] = (byDay[key] || 0) + Number(item.consumo_datos_movil || 0);
+    });
+    const lastSeven = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date;
+    });
+    const maxDay = Math.max(0, ...lastSeven.map((date) => byDay[dayKey(date)] || 0));
+    weekBars.value = lastSeven.map((date) => {
+      const value = byDay[dayKey(date)] || 0;
+      return {
+        label: date.toLocaleDateString('es-MX', { weekday: 'short' }),
+        value,
+        height: maxDay ? 5 + (value / maxDay) * 50 : 5,
+      };
+    });
+
+    // SIM con mayor consumo del mes
+    const consumptionBySim = monthly.reduce((result, item) => {
       const key = item.sim || item.dispositivo || 'Sin asignar';
       result[key] = (result[key] || 0) + Number(item.consumo_datos_movil || 0);
       return result;
     }, {});
     const [topSimId, topSimValue] = Object.entries(consumptionBySim).sort((a, b) => b[1] - a[1])[0] || ['Sin datos', 0];
     const sim = sims.find((item) => String(item.id) === String(topSimId));
-    topSim.value = { label: sim?.numero_telefonico || sim?.operador_nombre || (topSimId === 'Sin asignar' ? 'Sin SIM asignada' : `SIM ${topSimId}`), value: topSimValue };
+    topSim.value = {
+      label: sim?.numero_telefonico || sim?.operador_nombre || (topSimId === 'Sin asignar' ? 'Sin SIM asignada' : `SIM ${topSimId}`),
+      value: topSimValue,
+    };
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
   } catch (error) {
     console.error(error);
@@ -664,4 +699,5 @@ onBeforeUnmount(() => {
   .quick-metric strong { font-size: 1.35rem; }
   .quick-metric span, .quick-metric small { font-size: 0.65rem; }
 }
+.hero-chart span { max-width: 22px; }
 </style>
