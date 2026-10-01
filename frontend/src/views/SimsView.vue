@@ -71,20 +71,17 @@
           </div>
 
           <div class="device-summary">
-            <div class="device-badge">
+            <div class="device-badge sim-badge-wrap">
               <span class="device-icon">▤</span>
               <div>
                 <small>Número de teléfono</small>
                 <strong>{{ selectedSim.numero_telefonico || 'No disponible' }}</strong>
               </div>
             </div>
-            <div class="operator-badge">
-              <small>Operadora</small>
-              <strong>{{ selectedSim.operador_nombre || 'Sin operador' }}</strong>
-            </div>
-            <div class="device-badge operator-badge-mobile">
+            <div class="device-badge sim-badge-wrap">
+              <span class="device-icon secondary">◎</span>
               <div>
-                <small>Operador</small>
+                <small>Operadora</small>
                 <strong>{{ selectedSim.operador_nombre || 'Sin operador' }}</strong>
               </div>
             </div>
@@ -633,6 +630,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  min-height: 92px;
   padding: 12px 14px;
   border-radius: 12px;
   background: linear-gradient(135deg, #f8fafc, #eef7ff);
@@ -650,12 +648,18 @@ onBeforeUnmount(() => {
 .sim-info-block {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
 }
 
 .sim-info-block strong {
   display: block;
   color: #0f172a;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -664,20 +668,21 @@ onBeforeUnmount(() => {
 .sim-info-block small {
   display: block;
   color: #64748b;
-  font-size: 0.8rem;
-  margin-top: 4px;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .row-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .status-badge {
   padding: 6px 10px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -697,10 +702,10 @@ onBeforeUnmount(() => {
   background: rgba(16, 185, 129, 0.12);
   color: #047857;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-weight: 700;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
 }
 
 .empty-card {
