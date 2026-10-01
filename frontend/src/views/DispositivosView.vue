@@ -108,26 +108,6 @@
             <div class="detail-item uuid-detail"><span class="detail-icon">◎</span><span>UUID</span><strong class="uuid">{{ selectedDevice.device_uuid || 'No disponible' }}</strong></div>
           </div>
 
-          <div class="apps-mini-box">
-            <div class="apps-mini-header">
-              <h4>Historial de apps</h4>
-              <span>PPP apps</span>
-            </div>
-
-            <div v-if="getDeviceApps(selectedDevice.id).length" class="apps-mini-list">
-              <div v-for="app in getDeviceApps(selectedDevice.id)" :key="app.package_name || app.name || app.id" class="app-history-item">
-                <div class="app-history-main">
-                  <span class="app-dot"></span>
-                  <div>
-                    <strong>{{ app.name || app.package_name || 'App' }}</strong>
-                    <small>{{ formatLastUsed(app.last_used) }}</small>
-                  </div>
-                </div>
-                <span class="duration-badge">{{ formatDuration(app.duration_minutes) }}</span>
-              </div>
-            </div>
-            <div v-else class="apps-empty">No hay apps detectadas todavía.</div>
-          </div>
         </template>
 
         <div v-else class="empty-detail">
