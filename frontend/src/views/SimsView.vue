@@ -67,7 +67,12 @@
 
           <div class="monthly-toolbar">
             <div><span class="eyebrow">Consumo mensual</span><strong>Datos usados en {{ monthLabel }}</strong></div>
-            <div class="monthly-actions"><input v-model="selectedMonth" type="month" aria-label="Mes del reporte" /><button class="export-btn" type="button" @click="exportMonthlyReport">⇩ Excel</button></div>
+           <select v-model.number="selectedMonthNumber" aria-label="Mes del reporte">
+  <option v-for="(name, i) in monthNames" :key="i" :value="i + 1">{{ name }}</option>
+</select>
+<select v-model.number="selectedYear" aria-label="Año del reporte">
+  <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+</select>
           </div>
           
           <div class="device-summary">
@@ -162,6 +167,22 @@ const loading = ref(false);
 const loadError = ref('');
 const lastSync = ref('nunca');
 const selectedMonth = ref(new Date().toISOString().slice(0, 7));
+const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+const yearOptions = computed(() => {
+  const current = new Date().getFullYear();
+  return Array.from({ length: 6 }, (_, i) => current - i);
+});
+
+const selectedYear = computed({
+  get: () => Number(selectedMonth.value.split('-')[0]),
+  set: (year) => { selectedMonth.value = `${year}-${selectedMonth.value.split('-')[1]}`; },
+});
+
+const selectedMonthNumber = computed({
+  get: () => Number(selectedMonth.value.split('-')[1]),
+  set: (month) => { selectedMonth.value = `${selectedMonth.value.split('-')[0]}-${String(month).padStart(2, '0')}`; },
+});
 const consumptionRecords = ref([]);
 
 const monthLabel = computed(() => {
@@ -1258,5 +1279,10 @@ onBeforeUnmount(() => {
   font-weight: 700;
   line-height: 1.3;
   font-family: inherit;
+}
+.monthly-actions select { padding: 8px 9px; border: 1px solid #DCE3EE; border-radius: 6px; background: #fff; color: #121A2B; font-size: 0.85rem; cursor: pointer; }
+
+@media (max-width: 640px) {
+  .monthly-actions select { width: 100%; }
 }
 </style>
