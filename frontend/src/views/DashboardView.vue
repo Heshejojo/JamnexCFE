@@ -17,10 +17,10 @@
     </header>
 
     <section class="stats-grid">
-      <div class="stat-card stat-devices"><div class="stat-icon">▣</div><div class="stat-body"><span>Dispositivos</span><strong>{{ metrics.devices }}</strong><small>Total de dispositivos registrados</small></div><b>›</b></div>
-      <div class="stat-card stat-sims"><div class="stat-icon">▤</div><div class="stat-body"><span>SIMs</span><strong>{{ metrics.sims }}</strong><small>Total de SIMs activas</small></div><b>›</b></div>
-      <div class="stat-card stat-online"><div class="stat-icon">▥</div><div class="stat-body"><span>En línea</span><strong>{{ metrics.connected }}</strong><small>Dispositivos conectados</small></div><b>›</b></div>
-      <div class="stat-card stat-data"><div class="stat-icon">▤</div><div class="stat-body"><span>Datos móviles usados</span><strong>{{ formatMb(metrics.mobile) }}</strong><small>Consumo total del periodo</small></div><b>›</b></div>
+      <div class="stat-card stat-devices"><div class="stat-icon">▣</div><div class="stat-body"><span>Dispositivos</span><strong>{{ metrics.devices }}</strong><small>Total de dispositivos registrados</small></div></div>
+      <div class="stat-card stat-sims"><div class="stat-icon">▤</div><div class="stat-body"><span>SIMs</span><strong>{{ metrics.sims }}</strong><small>Total de SIMs activas</small></div></div>
+      <div class="stat-card stat-online"><div class="stat-icon">▥</div><div class="stat-body"><span>En línea</span><strong>{{ metrics.connected }}</strong><small>Dispositivos conectados</small></div></div>
+      <div class="stat-card stat-data"><div class="stat-icon">▤</div><div class="stat-body"><span>Datos móviles usados</span><strong>{{ formatMb(metrics.mobile) }}</strong><small>Consumo total del periodo</small></div></div>
     </section>
 
     <section class="command-grid">
