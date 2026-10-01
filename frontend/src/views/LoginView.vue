@@ -2,19 +2,27 @@
   <div class="login-shell">
     <div class="login-panel">
       <section class="login-aside">
-        <div class="logo-frame">
-          <img class="brand-logo" src="/images/Logo1.jpg" alt="Comisión Federal de Electricidad" />
-        </div>
-        <div class="aside-copy">
+        <div class="aside-top">
           <span class="aside-kicker">Sistema interno</span>
+          <div class="aside-line"></div>
+        </div>
+
+        <div class="aside-copy">
           <h1>JAMNEX</h1>
           <p>Monitorea dispositivos y líneas móviles desde un solo lugar.</p>
+          <ul class="aside-features">
+            <li>Dispositivos en tiempo real</li>
+            <li>Consumo de datos por línea</li>
+            <li>Reportes en Excel</li>
+          </ul>
         </div>
-        <div class="aside-line"></div>
-        <small class="aside-footer">Comisión Federal de Electricidad</small>
+
+        <small class="aside-footer">© 2026 Jamnex</small>
       </section>
 
       <section class="login-content">
+        <img class="brand-logo" src="/images/Logo1.jpg" alt="Jamnex" />
+
         <div class="welcome-copy">
           <span class="form-kicker">Acceso</span>
           <h2>Bienvenido</h2>
@@ -43,7 +51,6 @@
             <span>{{ loading ? 'Validando acceso...' : 'Iniciar sesión' }}</span>
           </button>
         </form>
-
       </section>
     </div>
   </div>
@@ -84,6 +91,7 @@ async function submitLogin() {
 </script>
 
 <style scoped>
+/* ---------- Fondo de la página ---------- */
 .login-shell {
   width: 100%;
   margin: 0 auto;
@@ -91,51 +99,56 @@ async function submitLogin() {
   display: grid;
   place-items: center;
   padding: 28px 18px;
-  background: linear-gradient(135deg, #e8f5ef 0%, #f8fafc 55%, #fff3f0 100%);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(52, 201, 143, 0.22), transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(27, 42, 68, 0.14), transparent 45%),
+    #f4f7f6;
 }
 
 .login-panel {
-  width: min(100%, 860px);
+  width: min(100%, 940px);
   display: grid;
   grid-template-columns: 0.86fr 1.14fr;
   overflow: hidden;
   background: #fff;
-  border: 1px solid rgba(0, 127, 95, 0.16);
-  box-shadow: 0 24px 60px rgba(0, 67, 49, 0.16);
-  border-radius: 18px;
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 30px 70px rgba(10, 18, 28, 0.18);
 }
 
+/* ---------- Lado oscuro ---------- */
 .login-aside {
+  position: relative;
   display: flex;
-  min-height: 520px;
+  min-height: 560px;
   flex-direction: column;
   justify-content: space-between;
-  padding: 34px;
-  color: #fff;
-  background: linear-gradient(150deg, #167A39 0%, #1B2A44 72%, #0A121C 100%);
-}
-
-.logo-frame {
-  width: 190px;
-  height: 190px;
-  padding: 14px;
+  padding: 40px 36px;
   overflow: hidden;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  color: #fff;
+  background: linear-gradient(155deg, #1E9B48 0%, #167A39 30%, #1B2A44 78%, #0A121C 100%);
 }
 
-.brand-logo {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain;
-  object-position: center;
+.login-aside::after {
+  content: '';
+  position: absolute;
+  right: -90px;
+  bottom: -90px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.aside-copy {
-  margin-top: auto;
-  padding: 76px 0 30px;
+.login-aside > * {
+  position: relative;
+  z-index: 1;
+}
+
+.aside-top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .aside-kicker,
@@ -147,39 +160,87 @@ async function submitLogin() {
   text-transform: uppercase;
 }
 
+.aside-line {
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: #34C98F;
+}
+
+.aside-copy {
+  margin-top: auto;
+  padding: 0 0 36px;
+}
+
 .aside-copy h1 {
-  margin: 10px 0 12px;
-  font-size: 2.35rem;
-  letter-spacing: 0;
+  margin: 0 0 12px;
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
 }
 
 .aside-copy p {
-  max-width: 260px;
+  max-width: 280px;
   margin: 0;
   color: #d7f3e9;
   line-height: 1.6;
 }
 
-.aside-line {
-  width: 48px;
-  height: 4px;
-  border-radius: 2px;
-  object-fit: cover;
-  object-position: center;
+.aside-features {
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.aside-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e4f7ee;
+  font-size: 0.88rem;
+}
+
+.aside-features li::before {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #a7f0cf;
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 
 .aside-footer {
-  margin-top: 16px;
   color: #b7e4d4;
   font-size: 0.72rem;
 }
 
+/* ---------- Lado blanco (logo + formulario) ---------- */
 .login-content {
-  padding: 58px 58px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 58px;
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 90px;
+  max-width: 100%;
+  margin: 0 0 30px;
+  object-fit: contain;
+  object-position: left center;
+  mix-blend-mode: multiply;
 }
 
 .welcome-copy {
-  margin-bottom: 32px;
+  margin-bottom: 26px;
 }
 
 .form-kicker {
@@ -198,27 +259,25 @@ async function submitLogin() {
   color: #64756f;
 }
 
-.btn-primary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 9px;
-  padding: 0.85rem 1rem;
+/* ---------- Formulario ---------- */
+.login-form .form-label {
+  font-size: 0.82rem;
   font-weight: 700;
-  background: #1E9B48;
-  border: 0;
-  box-shadow: 0 8px 16px rgba(0, 127, 95, 0.18);
-}
-
-.btn-primary:hover,
-.btn-primary:focus {
-  background: #167A39;
+  color: #334155;
 }
 
 .login-form .form-control {
   padding: 0.82rem 0.9rem;
   border-radius: 9px;
   border: 1px solid #d5e2dc;
+  background: #f7faf9;
+  transition: all 0.18s ease;
+}
+
+.login-form .form-control:focus {
+  background: #fff;
+  border-color: #1E9B48;
+  box-shadow: 0 0 0 0.2rem rgba(30, 155, 72, 0.14);
 }
 
 .password-label-row {
@@ -244,38 +303,31 @@ async function submitLogin() {
   text-decoration: underline;
 }
 
-.login-form .form-control:focus {
-  border-color: #008f68;
-  box-shadow: 0 0 0 0.2rem rgba(0,143,104,0.13);
-}
-
-.demo-box {
-  margin-top: 18px;
-  background: #f0faf5;
-  border: 1px solid #c8e8da;
-  border-radius: 9px;
-  padding: 12px 14px;
+.btn-primary {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  color: #16634c;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 9px;
+  font-weight: 700;
+  background: #1E9B48;
+  box-shadow: 0 8px 16px rgba(30, 155, 72, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
-.demo-box span {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.8;
+.btn-primary:hover:not(:disabled),
+.btn-primary:focus {
+  background: #167A39;
 }
 
-.demo-box strong {
-  font-size: 1rem;
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(30, 155, 72, 0.28);
 }
 
-.demo-box small {
-  opacity: 0.8;
-}
-
+/* ---------- Móvil ---------- */
 @media (max-width: 700px) {
   .login-panel {
     grid-template-columns: 1fr;
@@ -283,20 +335,18 @@ async function submitLogin() {
 
   .login-aside {
     min-height: 0;
-    padding: 22px;
-  }
-
-  .brand-logo {
-    width: 100%;
-    height: 100%;
+    padding: 26px 22px;
   }
 
   .aside-copy {
-    padding: 30px 0 18px;
+    padding: 22px 0 10px;
   }
 
-  .aside-copy h1 { font-size: 1.8rem; }
-  .aside-copy p { display: none; }
-  .login-content { padding: 34px 22px 28px; }
+  .aside-copy h1 { font-size: 2rem; }
+  .aside-copy p,
+  .aside-features { display: none; }
+
+  .login-content { padding: 30px 22px 28px; }
+  .brand-logo { height: 70px; }
 }
 </style>
