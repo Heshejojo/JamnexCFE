@@ -1,0 +1,1 @@
+python manage.py shell -c "import reportes.views as v; print(v.__file__); print(hasattr(v, '_last_day'))"
