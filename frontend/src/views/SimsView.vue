@@ -72,17 +72,17 @@
 
           <div class="device-summary">
             <div class="device-badge sim-badge-wrap">
-              <span class="device-icon">▤</span>
-              <div>
-                <small>Número de teléfono</small>
-                <strong>{{ selectedSim.numero_telefonico || 'No disponible' }}</strong>
-              </div>
-            </div>
-            <div class="device-badge sim-badge-wrap">
               <span class="device-icon secondary">◎</span>
               <div>
                 <small>Operadora</small>
                 <strong>{{ selectedSim.operador_nombre || 'Sin operador' }}</strong>
+              </div>
+            </div>
+            <div class="device-badge sim-badge-wrap sim-badge-wide">
+              <span class="device-icon">▤</span>
+              <div>
+                <small>Número de teléfono</small>
+                <strong>{{ selectedSim.numero_telefonico || 'No disponible' }}</strong>
               </div>
             </div>
 
@@ -791,10 +791,21 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   width: fit-content;
+  min-width: 180px;
+  max-width: 100%;
   padding: 10px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.sim-badge-wrap {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.sim-badge-wide {
+  min-width: 220px;
 }
 
 .device-icon {
@@ -805,6 +816,11 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: linear-gradient(135deg, #dbeafe, #e0e7ff);
   font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.device-icon.secondary {
+  background: linear-gradient(135deg, #dcfce7, #d9f99d);
 }
 
 .device-badge small {
