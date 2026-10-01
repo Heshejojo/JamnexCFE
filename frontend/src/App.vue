@@ -40,7 +40,11 @@
     </aside>
 
     <main class="main-panel">
-      <router-view />
+      <router-view v-slot="{ Component }">
+  <keep-alive>
+    <component :is="Component" />
+  </keep-alive>
+</router-view>
     </main>
   </div>
 
