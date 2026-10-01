@@ -65,15 +65,18 @@
             </div>
           </div>
 
-          <div class="monthly-toolbar">
-            <div><span class="eyebrow">Consumo mensual</span><strong>Datos usados en {{ monthLabel }}</strong></div>
-           <select v-model.number="selectedMonthNumber" aria-label="Mes del reporte">
-  <option v-for="(name, i) in monthNames" :key="i" :value="i + 1">{{ name }}</option>
-</select>
-<select v-model.number="selectedYear" aria-label="Año del reporte">
-  <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-</select>
-          </div>
+       <div class="monthly-toolbar">
+  <div><span class="eyebrow">Consumo mensual</span><strong>Datos usados en {{ monthLabel }}</strong></div>
+  <div class="monthly-actions">
+    <select v-model.number="selectedMonthNumber" aria-label="Mes del reporte">
+      <option v-for="(name, i) in monthNames" :key="i" :value="i + 1">{{ name }}</option>
+    </select>
+    <select v-model.number="selectedYear" aria-label="Año del reporte">
+      <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+    </select>
+    <button class="export-btn" type="button" @click="exportMonthlyReport">⇩ Excel</button>
+  </div>
+</div>
           
           <div class="device-summary">
   <div class="device-badge">
