@@ -114,7 +114,7 @@
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tecnología</span><strong>{{ selectedSim.tecnologia || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">⌁</span><span>Roaming</span><strong>{{ selectedSim.roaming ? 'Sí' : 'No' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tipo de red</span><strong>{{ selectedSim.tipo_red || 'No disponible' }}</strong></div>
-            <div class="detail-item status-detail"><span class="detail-icon">✓</span><span>Estado</span><strong>{{ selectedSim.estado || (selectedSim.activo ? 'Activo' : 'Inactivo') }}</strong></div>
+            
           </div>
 
         </template>
