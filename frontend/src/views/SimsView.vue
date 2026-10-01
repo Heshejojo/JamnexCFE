@@ -1216,4 +1216,30 @@ onBeforeUnmount(() => {
 
 .device-badge { width: 100%; padding: 13px 14px; background: #F4F6FA; }
 .device-icon { color: #1E9B48; background: #e0f4e9; font-size: 1.25rem; }
+
+/* ===== NUEVO: tarjetas de tamaño uniforme en Información técnica ===== */
+.summary-grid,
+.detail-grid {
+  grid-auto-rows: 84px;
+}
+
+.summary-card,
+.detail-item {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  justify-content: center;
+}
+
+.summary-card strong,
+.detail-item strong {
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
 </style>
