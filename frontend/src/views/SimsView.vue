@@ -69,46 +69,39 @@
             <div><span class="eyebrow">Consumo mensual</span><strong>Datos usados en {{ monthLabel }}</strong></div>
             <div class="monthly-actions"><input v-model="selectedMonth" type="month" aria-label="Mes del reporte" /><button class="export-btn" type="button" @click="exportMonthlyReport">⇩ Excel</button></div>
           </div>
-
+          
           <div class="device-summary">
-            <div class="device-badge sim-badge-compact" style="width: 180px; min-width: 180px; flex: 0 0 180px;">
-              <span class="device-icon secondary">◎</span>
-              <div>
-                <small>Operadora</small>
-                <strong>{{ selectedSim.operador_nombre || 'Sin operador' }}</strong>
-              </div>
-            </div>
-            <div class="device-badge sim-badge-wide" style="flex: 1 1 0; min-width: 260px;">
-              <span class="device-icon">▤</span>
-              <div>
-                <small>Número de teléfono</small>
-                <strong>{{ selectedSim.numero_telefonico || 'No disponible' }}</strong>
-              </div>
-            </div>
+  <div class="device-badge">
+    <span class="device-icon">▤</span>
+    <div>
+      <small>Número de teléfono</small>
+      <strong>{{ selectedSim.numero_telefonico || 'No disponible' }}</strong>
+    </div>
+  </div>
 
-            <div class="summary-grid">
-              <div class="summary-card blue">
-                <span class="summary-icon">▥</span>
-                <span class="metric-kicker">Datos móviles usados hoy</span>
-                <strong>{{ todayUsed(selectedSim).toFixed(2) }} MB</strong>
-              </div>
-              <div class="summary-card green">
-                <span class="summary-icon">▥</span>
-                <span class="metric-kicker">Total acumulado del mes</span>
-                <strong>{{ monthlyUsed(selectedSim).toFixed(2) }} MB</strong>
-              </div>
-              <div class="summary-card amber">
-                <span class="summary-icon">◷</span>
-                <span class="metric-kicker">Límite</span>
-                <strong>{{ ((totalUsed(selectedSim) / 2048) * 100).toFixed(1) }}% / 2 GB</strong>
-              </div>
-              <div class="summary-card violet">
-                <span class="summary-icon">◉</span>
-                <span class="metric-kicker">Estado</span>
-                <strong>{{ selectedSim.activo ? 'En servicio' : 'Sin servicio' }}</strong>
-              </div>
-            </div>
-          </div>
+  <div class="summary-grid">
+    <div class="summary-card blue">
+      <span class="summary-icon">▥</span>
+      <span class="metric-kicker">Datos móviles usados hoy</span>
+      <strong>{{ todayUsed(selectedSim).toFixed(2) }} MB</strong>
+    </div>
+    <div class="summary-card green">
+      <span class="summary-icon">▥</span>
+      <span class="metric-kicker">Total acumulado del mes</span>
+      <strong>{{ monthlyUsed(selectedSim).toFixed(2) }} MB</strong>
+    </div>
+    <div class="summary-card amber">
+      <span class="summary-icon">◷</span>
+      <span class="metric-kicker">Límite</span>
+      <strong>{{ ((totalUsed(selectedSim) / 2048) * 100).toFixed(1) }}% / 2 GB</strong>
+    </div>
+    <div class="summary-card violet">
+      <span class="summary-icon">◎</span>
+      <span class="metric-kicker">Operadora</span>
+      <strong>{{ selectedSim.operador_nombre || 'Sin operador' }}</strong>
+    </div>
+  </div>
+</div>
 
           <div class="detail-grid">
             <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ selectedSim.activo ? 'Activo' : 'Inactivo' }}</strong></div>
@@ -1220,4 +1213,7 @@ onBeforeUnmount(() => {
   .sims-page::before { left: 12px; }
   .topbar h2 { font-size: 1.7rem; }
 }
+
+.device-badge { width: 100%; padding: 13px 14px; background: #F4F6FA; }
+.device-icon { color: #1E9B48; background: #e0f4e9; font-size: 1.25rem; }
 </style>
