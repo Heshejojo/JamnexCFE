@@ -1288,4 +1288,32 @@ onBeforeUnmount(() => {
 @media (max-width: 640px) {
   .monthly-actions select { width: 100%; }
 }
+/* ===== Tarjetas sin color en Información técnica ===== */
+.summary-card,
+.summary-card.blue,
+.summary-card.green,
+.summary-card.amber,
+.summary-card.violet,
+.detail-item,
+.detail-item:first-child,
+.status-detail {
+  background: #fff;
+  border-color: #DCE3EE;
+}
+
+.summary-icon,
+.detail-icon,
+.detail-item:first-child .detail-icon,
+.status-detail .detail-icon {
+  background: #F4F6FA;
+  color: #5B6B82;
+}
+
+.status-detail span:not(.detail-icon) {
+  color: #5B6B82;
+}
+
+.status-detail strong {
+  color: #121A2B;
+}
 </style>
