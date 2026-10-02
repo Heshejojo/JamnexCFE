@@ -79,7 +79,11 @@ const alerts = ref([]);
 const nowDate = new Date();
 const selectedMonth = ref(`${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}`);
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const yearOptions = Array.from({ length: 6 }, (_, i) => nowDate.getFullYear() - i);
+const START_YEAR = 2026; // año en que se implementó la app
+const yearOptions = Array.from(
+  { length: Math.max(1, nowDate.getFullYear() - START_YEAR + 1) },
+  (_, i) => nowDate.getFullYear() - i
+);
 
 const selectedYear = computed({
   get: () => Number(selectedMonth.value.split('-')[0]),
