@@ -27,6 +27,12 @@ const routes = [
     meta: { requiresAuth: true, permiso: 'usuarios' },
   },
   {
+    path: '/sin-acceso',
+    name: 'sin-acceso',
+    component: () => import('../views/NoAccessView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../views/LoginView.vue'),
@@ -41,12 +47,12 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.token) return '/login';
-  if (to.meta.requiresAuth && auth.token && !auth.user) await auth.fetchCurrentUser();
+  if (to.meta.requiresAuth) await auth.fetchCurrentUser();
   if (to.meta.requiresAuth && !auth.token) return '/login';
 
   const permission = to.meta.permiso;
-  if (!permission || !auth.user) return true;
-  if (auth.user.is_superuser || auth.user.permisos?.[permission] === true) return true;
+  if (!permission || !auth.user || auth.user.is_superuser) return true;
+  if (auth.user.permisos?.[permission] === true) return true;
 
   const allowedRoutes = [
     { permiso: 'dashboard', path: '/' },
@@ -55,7 +61,8 @@ router.beforeEach(async (to) => {
     { permiso: 'usuarios', path: '/usuarios' },
   ];
   const fallback = allowedRoutes.find(({ permiso }) => auth.user.permisos?.[permiso] === true);
-  return fallback?.path || '/login';
+  if (fallback && fallback.path !== to.path) return fallback.path;
+  return '/sin-acceso';
 });
 
 export default router;

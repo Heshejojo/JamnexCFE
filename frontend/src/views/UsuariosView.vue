@@ -70,7 +70,9 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
 
+const auth = useAuthStore();
 const items = ref([]);
 const roles = ref([]);
 const query = ref('');
@@ -167,6 +169,10 @@ function visiblePermissions(item) {
 }
 
 async function save() {
+  const isEditingSelf = editingId.value === auth.user?.id;
+  const removingOwnUsersAccess = isEditingSelf && !form.permisos.usuarios;
+  if (removingOwnUsersAccess && !window.confirm('Te estás quitando el acceso a Usuarios a ti mismo. ¿Seguro?')) return;
+
   loading.value = true;
   saveError.value = '';
   try {
@@ -183,8 +189,9 @@ async function save() {
     if (editingId.value) await api.patch(`/usuarios/${editingId.value}/`, payload);
     else await api.post('/usuarios/', payload);
 
+    if (isEditingSelf) await auth.fetchCurrentUser();
     reset();
-    await load();
+    if (!removingOwnUsersAccess) await load();
   } catch (error) {
     console.error(error.response?.data || error);
     saveError.value = JSON.stringify(error.response?.data || 'Error al guardar');

@@ -40,11 +40,7 @@
     </aside>
 
     <main class="main-panel">
-      <router-view v-slot="{ Component }">
-  <keep-alive>
-    <component :is="Component" />
-  </keep-alive>
-</router-view>
+      <router-view />
     </main>
   </div>
 
@@ -54,12 +50,19 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
+const permissionRoutes = [
+  { key: 'dashboard', path: '/' },
+  { key: 'dispositivos', path: '/dispositivos' },
+  { key: 'sims', path: '/sims' },
+  { key: 'usuarios', path: '/usuarios' },
+];
+let permissionRefreshTimer;
 
 const userName = computed(() => auth.user?.first_name || auth.user?.username || 'Administrador');
 const roleName = computed(() => auth.user?.rol?.nombre || 'Superadmin');
@@ -73,11 +76,20 @@ const initials = computed(() => {
     .join('');
 });
 
-onMounted(async () => {
-  if (auth.token) {
-    await auth.fetchCurrentUser();
-  }
+onMounted(() => {
+  permissionRefreshTimer = window.setInterval(() => {
+    if (auth.token) auth.fetchCurrentUser();
+  }, 60000);
 });
+
+onUnmounted(() => window.clearInterval(permissionRefreshTimer));
+
+watch(() => auth.user, () => {
+  const currentPermission = router.currentRoute.value.meta.permiso;
+  if (!auth.user || !currentPermission || can(currentPermission)) return;
+  const fallback = permissionRoutes.find(({ key }) => can(key));
+  router.replace(fallback?.path || '/sin-acceso');
+}, { deep: true });
 
 function logoutSession() {
   auth.logout();

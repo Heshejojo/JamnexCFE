@@ -15,11 +15,29 @@ api.interceptors.request.use((config) => {
 
 let refreshing = null;
 
+function expireSession() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user');
+  if (window.location.pathname !== '/login') window.location.assign('/login');
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status !== 401 || original?._retry || !localStorage.getItem('refresh_token')) {
+    const status = error.response?.status;
+    const authEndpoint = /\/auth\/(login|refresh)\/?$/.test(original?.url || '');
+
+    if (status === 403) {
+      const destination = window.location.pathname === '/' ? '/sin-acceso' : '/';
+      if (window.location.pathname !== destination) window.location.assign(destination);
+      return Promise.reject(error);
+    }
+
+    if (status !== 401 || authEndpoint) return Promise.reject(error);
+    if (original?._retry || !localStorage.getItem('refresh_token')) {
+      expireSession();
       return Promise.reject(error);
     }
 
@@ -34,9 +52,7 @@ api.interceptors.response.use(
       original.headers.Authorization = `Bearer ${data.access}`;
       return api(original);
     } catch (refreshError) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
+      expireSession();
       return Promise.reject(refreshError);
     } finally {
       refreshing = null;
