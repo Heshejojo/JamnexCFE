@@ -12,6 +12,13 @@
         <span class="sync-state" :class="{ syncing: loading, failed: syncError }">
           <i></i>{{ syncError ? 'Sin conexión' : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
+        <select v-model.number="selectedMonthNumber" class="month-select" aria-label="Mes">
+          <option v-for="(name, i) in monthNames" :key="i" :value="i + 1">{{ name }}</option>
+        </select>
+        <select v-model.number="selectedYear" class="month-select" aria-label="Año">
+          <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+        </select>
+        <button class="report-btn" type="button" @click="exportDevicesReport">⇩ Reporte dispositivos</button>
         <button class="primary-btn" :disabled="loading" @click="loadDashboard">Actualizar</button>
       </div>
     </header>
@@ -25,7 +32,7 @@
 
     <section class="command-grid">
       <div class="command-hero">
-        <div class="hero-heading"><div><span class="hero-kicker">▥ &nbsp; Red móvil</span><h3>Consumo acumulado</h3></div><span class="hero-period">◷ &nbsp; Este mes</span></div>
+        <div class="hero-heading"><div><span class="hero-kicker">▥ &nbsp; Red móvil</span><h3>Consumo acumulado</h3></div><span class="hero-period">◷ &nbsp; {{ monthLabel }}</span></div>
         <strong class="hero-value">{{ formatMb(metrics.mobile) }}</strong>
         <p>{{ metrics.sims }} SIM{{ metrics.sims === 1 ? '' : 's' }} activa{{ metrics.sims === 1 ? '' : 's' }}</p>
         <div class="hero-chart"><span v-for="(bar, i) in weekBars" :key="i" :style="{ height: `${bar.height}px` }" :title="`${bar.label}: ${formatMb(bar.value)}`"></span></div>
@@ -45,8 +52,8 @@
             <b>{{ formatMb(s.value) }}</b>
           </li>
         </ul>
-        <p v-else class="top-empty">No se ha registrado consumo este mes.</p>
-        <div class="attention-footer">ⓘ &nbsp; Consumo de datos móviles del mes actual, según la actividad de los dispositivos.</div>
+        <p v-else class="top-empty">No se ha registrado consumo en {{ monthLabel }}.</p>
+        <div class="attention-footer">ⓘ &nbsp; Consumo de datos móviles de {{ monthLabel }}, según la actividad de los dispositivos.</div>
       </div>
     </section>
 
@@ -61,15 +68,28 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import api from '../services/api';
 
 const loading = ref(false);
 const lastSync = ref('nunca');
 const syncError = ref(false);
-const topSim = ref({ label: 'Sin datos', value: 0 });
 const weekBars = ref(Array.from({ length: 7 }, () => ({ label: '', value: 0, height: 5 })));
 const alerts = ref([]);
+const nowDate = new Date();
+const selectedMonth = ref(`${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}`);
+const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const yearOptions = Array.from({ length: 6 }, (_, i) => nowDate.getFullYear() - i);
+
+const selectedYear = computed({
+  get: () => Number(selectedMonth.value.split('-')[0]),
+  set: (year) => { selectedMonth.value = `${year}-${selectedMonth.value.split('-')[1]}`; },
+});
+const selectedMonthNumber = computed({
+  get: () => Number(selectedMonth.value.split('-')[1]),
+  set: (month) => { selectedMonth.value = `${selectedMonth.value.split('-')[0]}-${String(month).padStart(2, '0')}`; },
+});
+const monthLabel = computed(() => `${monthNames[selectedMonthNumber.value - 1]} ${selectedYear.value}`);
 const topSims = ref([]);
 const todayLabel = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
@@ -96,9 +116,9 @@ async function loadDashboard() {
 
     const dayKey = (date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const monthKey = dayKey(new Date()).slice(0, 7);
+    const monthKey = selectedMonth.value;
 
-    // Solo consumo diario; el total del dashboard cuenta solo el mes actual
+    // Solo consumo diario del mes seleccionado
     const daily = consumption.filter((item) => item.periodo === 'diario' && item.fecha);
     const monthly = daily.filter((item) => dayKey(new Date(item.fecha)).slice(0, 7) === monthKey);
 
@@ -115,8 +135,12 @@ async function loadDashboard() {
       const key = dayKey(new Date(item.fecha));
       byDay[key] = (byDay[key] || 0) + Number(item.consumo_datos_movil || 0);
     });
+    const [selYear, selMonth] = selectedMonth.value.split('-').map(Number);
+    const today = new Date();
+    const isCurrentMonth = selYear === today.getFullYear() && selMonth === today.getMonth() + 1;
+    const endDate = isCurrentMonth ? today : new Date(selYear, selMonth, 0);
     const lastSeven = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
+      const date = new Date(endDate);
       date.setDate(date.getDate() - (6 - i));
       return date;
     });
@@ -136,12 +160,6 @@ async function loadDashboard() {
       result[key] = (result[key] || 0) + Number(item.consumo_datos_movil || 0);
       return result;
     }, {});
-    const [topSimId, topSimValue] = Object.entries(consumptionBySim).sort((a, b) => b[1] - a[1])[0] || ['Sin datos', 0];
-    const sim = sims.find((item) => String(item.id) === String(topSimId));
-    topSim.value = {
-      label: sim?.numero_telefonico || sim?.operador_nombre || (topSimId === 'Sin asignar' ? 'Sin SIM asignada' : `SIM ${topSimId}`),
-      value: topSimValue,
-    };
     const newAlerts = [];
     const now = Date.now();
     devices.forEach((device) => {
@@ -198,6 +216,25 @@ function formatMb(value) {
   return amount >= 1024 ? `${(amount / 1024).toFixed(1)} GB` : `${amount.toFixed(1)} MB`;
 }
 
+async function exportDevicesReport() {
+  const [year, month] = selectedMonth.value.split('-');
+  try {
+    const response = await api.get('/reportes/dispositivos/exportar/', {
+      params: { anio: year, mes: month, formato: 'xlsx' },
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dispositivos-${selectedMonth.value}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error exportando dispositivos:', error);
+    window.alert('No fue posible generar el reporte de dispositivos.');
+  }
+}
+
 let refreshTimer = null;
 
 onMounted(() => {
@@ -208,6 +245,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (refreshTimer) clearInterval(refreshTimer);
 });
+
+watch(selectedMonth, loadDashboard);
 </script>
 
 <style scoped>
@@ -782,4 +821,11 @@ onBeforeUnmount(() => {
 .top-track span { display: block; height: 100%; border-radius: inherit; background: #1E9B48; }
 .top-list li > b { flex-shrink: 0; color: #121A2B; font-size: 0.8rem; }
 .top-empty { margin: 22px 0; color: #8a9a94; font-size: 0.82rem; text-align: center; }
+.month-select { padding: 9px 10px; border: 1px solid #DCE3EE; border-radius: 7px; background: #fff; color: #121A2B; font-size: 0.85rem; cursor: pointer; }
+.report-btn { border: 1px solid #C7D3E8; padding: 9px 10px; border-radius: 7px; background: #E6F6EC; color: #167A39; font-size: 0.78rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.report-btn:hover { background: #d8f1e4; }
+
+@media (max-width: 640px) {
+  .month-select { width: 100%; }
+}
 </style>
