@@ -10,13 +10,6 @@
         <span class="sync-state" :class="{ syncing: loading, failed: syncError }">
           <i></i>{{ syncError ? syncMessage : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
-        <select v-model.number="selectedMonthNumber" class="month-select" aria-label="Mes">
-          <option v-for="(name, i) in monthNames" :key="i" :value="i + 1">{{ name }}</option>
-        </select>
-        <select v-model.number="selectedYear" class="month-select" aria-label="Año">
-          <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-        </select>
-        <button v-if="canExportDevicesReport" class="report-btn" type="button" @click="exportDevicesReport">⇩ Reporte dispositivos</button>
         <button class="primary-btn" :disabled="loading" @click="loadDashboard">Actualizar</button>
       </div>
     </header>
@@ -66,12 +59,9 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import api from '../services/api';
-import { useAuthStore } from '../stores/auth';
 
-const auth = useAuthStore();
-const canExportDevicesReport = computed(() => auth.user?.is_superuser || auth.user?.permisos?.dispositivos === true);
 const loading = ref(false);
 const lastSync = ref('nunca');
 const syncError = ref(false);
@@ -79,23 +69,8 @@ const syncMessage = ref('');
 const weekBars = ref(Array.from({ length: 7 }, () => ({ label: '', value: 0, height: 5 })));
 const alerts = ref([]);
 const nowDate = new Date();
-const selectedMonth = ref(`${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}`);
-const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const START_YEAR = 2026; // año en que se implementó la app
-const yearOptions = Array.from(
-  { length: Math.max(1, nowDate.getFullYear() - START_YEAR + 1) },
-  (_, i) => nowDate.getFullYear() - i
-);
-
-const selectedYear = computed({
-  get: () => Number(selectedMonth.value.split('-')[0]),
-  set: (year) => { selectedMonth.value = `${year}-${selectedMonth.value.split('-')[1]}`; },
-});
-const selectedMonthNumber = computed({
-  get: () => Number(selectedMonth.value.split('-')[1]),
-  set: (month) => { selectedMonth.value = `${selectedMonth.value.split('-')[0]}-${String(month).padStart(2, '0')}`; },
-});
-const monthLabel = computed(() => `${monthNames[selectedMonthNumber.value - 1]} ${selectedYear.value}`);
+const selectedMonth = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}`;
+const monthLabel = nowDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 const topSims = ref([]);
 const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
 
@@ -108,8 +83,9 @@ async function loadDashboard() {
   syncError.value = false;
   syncMessage.value = '';
   try {
+    const [selYear, selMonth] = selectedMonth.split('-').map(Number);
     const summaryResponse = await api.get('/dashboard/summary/', {
-      params: { anio: selectedYear.value, mes: selectedMonthNumber.value },
+      params: { anio: selYear, mes: selMonth },
     });
     const summary = summaryResponse.data;
     const devices = asList(summary.devices);
@@ -134,7 +110,6 @@ async function loadDashboard() {
       const key = dayKey(item.fecha);
       byDay[key] = (byDay[key] || 0) + Number(item.consumo_datos_movil || 0);
     });
-    const [selYear, selMonth] = selectedMonth.value.split('-').map(Number);
     const today = new Date();
     const isCurrentMonth = selYear === today.getFullYear() && selMonth === today.getMonth() + 1;
     const endDate = isCurrentMonth ? today : new Date(selYear, selMonth, 0);
@@ -218,25 +193,6 @@ function formatMb(value) {
   return amount >= 1024 ? `${(amount / 1024).toFixed(1)} GB` : `${amount.toFixed(1)} MB`;
 }
 
-async function exportDevicesReport() {
-  const [year, month] = selectedMonth.value.split('-');
-  try {
-    const response = await api.get('/reportes/dispositivos/exportar/', {
-      params: { anio: year, mes: month, formato: 'xlsx' },
-      responseType: 'blob',
-    });
-    const url = URL.createObjectURL(response.data);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `dispositivos-${selectedMonth.value}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error exportando dispositivos:', error);
-    window.alert('No fue posible generar el reporte de dispositivos.');
-  }
-}
-
 let refreshTimer = null;
 
 onMounted(() => {
@@ -247,8 +203,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (refreshTimer) clearInterval(refreshTimer);
 });
-
-watch(selectedMonth, loadDashboard);
 </script>
 
 <style scoped>
@@ -818,11 +772,4 @@ watch(selectedMonth, loadDashboard);
 .top-track span { display: block; height: 100%; border-radius: inherit; background: #1E9B48; }
 .top-list li > b { flex-shrink: 0; color: #121A2B; font-size: 0.8rem; }
 .top-empty { margin: 22px 0; color: #8a9a94; font-size: 0.82rem; text-align: center; }
-.month-select { padding: 9px 10px; border: 1px solid #DCE3EE; border-radius: 7px; background: #fff; color: #121A2B; font-size: 0.85rem; cursor: pointer; }
-.report-btn { border: 1px solid #C7D3E8; padding: 9px 10px; border-radius: 7px; background: #E6F6EC; color: #167A39; font-size: 0.78rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
-.report-btn:hover { background: #d8f1e4; }
-
-@media (max-width: 640px) {
-  .month-select { width: 100%; }
-}
 </style>
