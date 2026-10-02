@@ -171,11 +171,10 @@ const lastSync = ref('nunca');
 const selectedMonth = ref(new Date().toISOString().slice(0, 7));
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-const START_YEAR = 2026; // año en que se implementó la app
+const START_YEAR = 2026;
 const yearOptions = computed(() => {
   const current = new Date().getFullYear();
-  const total = Math.max(1, current - START_YEAR + 1);
-  return Array.from({ length: total }, (_, i) => current - i);
+  return Array.from({ length: Math.max(1, current - START_YEAR + 1) }, (_, i) => current - i);
 });
 
 const selectedYear = computed({
