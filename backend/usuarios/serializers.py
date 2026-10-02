@@ -31,6 +31,12 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'password', 'rol_id', 'activo', 'is_staff', 'permisos']
 
+    def validate_permisos(self, value):
+        base = {'dashboard': False, 'dispositivos': False, 'sims': False, 'usuarios': False}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError('Permisos inválidos.')
+        return {key: bool(value.get(key, False)) for key in base}
+
     def validate_rol_id(self, value):
         if value is not None and not Rol.objects.filter(
             pk=value, nombre__iexact='ADMIN', activo=True
