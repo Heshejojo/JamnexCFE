@@ -7,10 +7,8 @@
         <p>Sistema de Monitoreo y Administracion de Terminales Android</p>
       </div>
       <div class="topbar-actions">
-        <span class="online-state"><i></i>En línea</span>
-        <span class="date-state"><i>◷</i>{{ todayLabel }}</span>
         <span class="sync-state" :class="{ syncing: loading, failed: syncError }">
-          <i></i>{{ syncError ? 'Sin conexión' : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
+          <i></i>{{ syncError ? syncMessage : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
         <select v-model.number="selectedMonthNumber" class="month-select" aria-label="Mes">
           <option v-for="(name, i) in monthNames" :key="i" :value="i + 1">{{ name }}</option>
@@ -77,6 +75,7 @@ const canExportDevicesReport = computed(() => auth.user?.is_superuser || auth.us
 const loading = ref(false);
 const lastSync = ref('nunca');
 const syncError = ref(false);
+const syncMessage = ref('');
 const weekBars = ref(Array.from({ length: 7 }, () => ({ label: '', value: 0, height: 5 })));
 const alerts = ref([]);
 const nowDate = new Date();
@@ -98,7 +97,6 @@ const selectedMonthNumber = computed({
 });
 const monthLabel = computed(() => `${monthNames[selectedMonthNumber.value - 1]} ${selectedYear.value}`);
 const topSims = ref([]);
-const todayLabel = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
 
 function asList(data) {
@@ -108,6 +106,7 @@ function asList(data) {
 async function loadDashboard() {
   loading.value = true;
   syncError.value = false;
+  syncMessage.value = '';
   try {
     const summaryResponse = await api.get('/dashboard/summary/', {
       params: { anio: selectedYear.value, mes: selectedMonthNumber.value },
@@ -199,10 +198,11 @@ async function loadDashboard() {
       };
     });
     alerts.value = newAlerts;
-    lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (error) {
     console.error(error);
     syncError.value = true;
+    syncMessage.value = error.response?.status === 403 ? 'Sin permiso' : 'Sin conexión';
   } finally {
     loading.value = false;
   }
@@ -626,10 +626,6 @@ watch(selectedMonth, loadDashboard);
 
 .welcome-heading h2 { margin: 4px 0 2px; font-size: 1.75rem; color: #102a22; }
 .welcome-heading > p:last-child { margin: 0; color: #5B6B82; font-size: 0.78rem; }
-.online-state, .date-state { display: inline-flex; align-items: center; gap: 6px; color: #526a61; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
-.online-state { padding: 7px 9px; border: 1px solid #DCE3EE; border-radius: 7px; background: #F4F6FA; color: #15803d; }
-.online-state i, .date-state i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; font-style: normal; }
-.date-state i { width: auto; height: auto; background: none; color: #64748b; font-size: 1rem; }
 .stats-grid { gap: 12px; }
 .stat-card { min-height: 102px; padding: 14px; border-radius: 8px; box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04); }
 .stat-card b { margin-left: auto; color: #6c8790; font-size: 1.4rem; font-weight: 400; }
@@ -666,7 +662,6 @@ watch(selectedMonth, loadDashboard);
   .welcome-heading h2 { font-size: 1.45rem; }
   .topbar-actions { width: 100%; flex-wrap: wrap; }
   .command-grid { grid-template-columns: 1fr; }
-  .online-state, .date-state { display: none; }
 }
 
 .dashboard-page {

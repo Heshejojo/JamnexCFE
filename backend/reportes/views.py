@@ -12,7 +12,7 @@ from openpyxl.styles import Font, PatternFill
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from usuarios.permissions import RolePermission
+from usuarios.permissions import DashboardPermission, RolePermission
 from auditoria.services import record_action
 from consumos.models import Consumo
 from dispositivos.models import Dispositivo
@@ -47,7 +47,7 @@ def _style_header(row_cells):
 
 
 class DashboardSummaryView(APIView):
-    permission_classes = [RolePermission]
+    permission_classes = [DashboardPermission]
 
     def get(self, request):
         try:

@@ -1,6 +1,19 @@
 from rest_framework.permissions import BasePermission
 
 
+class DashboardPermission(BasePermission):
+    message = 'No tienes permiso para consultar el Dashboard.'
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if getattr(user, 'is_superuser', False):
+            return True
+        permisos = getattr(user, 'permisos', None)
+        return isinstance(permisos, dict) and permisos.get('dashboard') is True
+
+
 class RolePermission(BasePermission):
     message = 'No tienes permisos para realizar esta acción.'
 

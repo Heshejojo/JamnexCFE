@@ -29,13 +29,7 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const authEndpoint = /\/auth\/(login|refresh)\/?$/.test(original?.url || '');
 
-    if (status === 403) {
-      const destination = window.location.pathname === '/' ? '/sin-acceso' : '/';
-      if (window.location.pathname !== destination) window.location.assign(destination);
-      return Promise.reject(error);
-    }
-
-    if (status !== 401 || authEndpoint) return Promise.reject(error);
+    if (status === 403 || status !== 401 || authEndpoint) return Promise.reject(error);
     if (original?._retry || !localStorage.getItem('refresh_token')) {
       expireSession();
       return Promise.reject(error);

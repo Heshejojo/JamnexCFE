@@ -10,7 +10,7 @@ from usuarios.models import Rol, Usuario
 
 class DashboardSummaryPermissionTest(TestCase):
     def setUp(self):
-        role = Rol.objects.create(nombre='ADMIN', activo=True)
+        role = Rol.objects.create(nombre='VIEWER', activo=True)
         user = Usuario.objects.create_user(
             username='dashboard-only',
             email='dashboard@example.com',
