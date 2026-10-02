@@ -175,7 +175,6 @@ async function save() {
       email: form.email,
       first_name: form.first_name,
       last_name: form.last_name,
-      rol_id: form.rol_id,
       activo: form.activo,
       permisos: { ...form.permisos },
     };

@@ -24,7 +24,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 
 class UsuarioAdminSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False)
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
     rol_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
@@ -32,16 +32,22 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'password', 'rol_id', 'activo', 'is_staff', 'permisos']
 
     def validate_rol_id(self, value):
-        if value is None:
-            raise serializers.ValidationError('El usuario debe tener rol ADMIN.')
-        if not Rol.objects.filter(pk=value, nombre__iexact='ADMIN', activo=True).exists():
+        if value is not None and not Rol.objects.filter(
+            pk=value, nombre__iexact='ADMIN', activo=True
+        ).exists():
             raise serializers.ValidationError('Solo se permite el rol ADMIN.')
         return value
 
+    def _admin_role(self):
+        role = Rol.objects.filter(nombre__iexact='ADMIN', activo=True).first()
+        if not role:
+            raise serializers.ValidationError({'rol_id': 'No existe un rol ADMIN activo.'})
+        return role
+
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        rol_id = validated_data.pop('rol_id', None)
-        user = Usuario(**validated_data, rol_id=rol_id)
+        validated_data.pop('rol_id', None)
+        user = Usuario(**validated_data, rol=self._admin_role())
         if password:
             user.set_password(password)
         else:
@@ -51,11 +57,10 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
-        rol_id = validated_data.pop('rol_id', serializers.empty)
+        validated_data.pop('rol_id', None)
         for key, value in validated_data.items():
             setattr(instance, key, value)
-        if rol_id is not serializers.empty:
-            instance.rol_id = rol_id
+        instance.rol = self._admin_role()
         if password:
             instance.set_password(password)
         instance.save()
