@@ -3,7 +3,7 @@
     <aside class="sidebar">
       <div class="brand-block">
         <div class="brand-logo-frame">
-          <img class="brand-logo" src="/images/Logo1.jpg" alt="Comisión Federal de Electricidad" />
+          <img class="brand-logo" src="/images/Logo1.jpg" alt="Jamnex" />
         </div>
         <div class="brand-copy">
           <small>Plataforma de control</small>
@@ -104,6 +104,12 @@ function logoutSession() {
 
 .sidebar {
   width: 220px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
+  overflow-y: auto;
+  flex-shrink: 0;
   background: linear-gradient(180deg, #16233A 0%, #0A121C 100%);
   color: white;
   padding: 20px 14px;
@@ -291,6 +297,8 @@ function logoutSession() {
 
   .sidebar {
     width: 100%;
+    position: static;
+    height: auto;
     padding: 14px;
     gap: 12px;
   }
