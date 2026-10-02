@@ -202,7 +202,12 @@ async function loadDashboard() {
   } catch (error) {
     console.error(error);
     syncError.value = true;
-    syncMessage.value = error.response?.status === 403 ? 'Sin permiso' : 'Sin conexión';
+    const status = error.response?.status;
+    syncMessage.value = status === 403
+      ? 'Sin permiso'
+      : status
+        ? `Error ${status}`
+        : 'Sin conexión';
   } finally {
     loading.value = false;
   }
