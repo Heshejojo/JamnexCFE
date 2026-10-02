@@ -18,7 +18,7 @@
         <select v-model.number="selectedYear" class="month-select" aria-label="Año">
           <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
         </select>
-        <button class="report-btn" type="button" @click="exportDevicesReport">⇩ Reporte dispositivos</button>
+        <button v-if="canExportDevicesReport" class="report-btn" type="button" @click="exportDevicesReport">⇩ Reporte dispositivos</button>
         <button class="primary-btn" :disabled="loading" @click="loadDashboard">Actualizar</button>
       </div>
     </header>
@@ -70,7 +70,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
 
+const auth = useAuthStore();
+const canExportDevicesReport = computed(() => auth.user?.is_superuser || auth.user?.permisos?.dispositivos === true);
 const loading = ref(false);
 const lastSync = ref('nunca');
 const syncError = ref(false);
@@ -106,37 +109,30 @@ async function loadDashboard() {
   loading.value = true;
   syncError.value = false;
   try {
-    
-    const [devicesResponse, simsResponse, consumptionResponse, batteryResponse] = await Promise.all([
-  api.get('/dispositivos/'),
-  api.get('/sims/'),
-  api.get('/consumos/'),
-  api.get('/bateria/').catch(() => ({ data: [] })),
-]);
-    const batteries = asList(batteryResponse.data);
-    const devices = asList(devicesResponse.data);
-    const sims = asList(simsResponse.data);
-    const consumption = asList(consumptionResponse.data);
+    const summaryResponse = await api.get('/dashboard/summary/', {
+      params: { anio: selectedYear.value, mes: selectedMonthNumber.value },
+    });
+    const summary = summaryResponse.data;
+    const devices = asList(summary.devices);
+    const sims = asList(summary.sims);
+    const monthly = asList(summary.consumption);
 
     const dayKey = (date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const monthKey = selectedMonth.value;
+      typeof date === 'string'
+        ? date.slice(0, 10)
+        : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-    // Solo consumo diario del mes seleccionado
-    const daily = consumption.filter((item) => item.periodo === 'diario' && item.fecha);
-    const monthly = daily.filter((item) => dayKey(new Date(item.fecha)).slice(0, 7) === monthKey);
-
-    metrics.devices = devices.length;
-    metrics.sims = sims.length;
-    metrics.connected = devices.filter((item) => item.activo).length;
+    metrics.devices = summary.metrics.devices;
+    metrics.sims = summary.metrics.sims;
+    metrics.connected = summary.metrics.connected;
     metrics.mobile = monthly.reduce((sum, item) => sum + Number(item.consumo_datos_movil || 0), 0);
     metrics.wifi = monthly.reduce((sum, item) => sum + Number(item.consumo_wifi || 0), 0);
     metrics.consumption = metrics.mobile;
 
     // Barras reales de los últimos 7 días
     const byDay = {};
-    daily.forEach((item) => {
-      const key = dayKey(new Date(item.fecha));
+    monthly.forEach((item) => {
+      const key = dayKey(item.fecha);
       byDay[key] = (byDay[key] || 0) + Number(item.consumo_datos_movil || 0);
     });
     const [selYear, selMonth] = selectedMonth.value.split('-').map(Number);
@@ -174,11 +170,8 @@ async function loadDashboard() {
       } else if (now - last > 24 * 60 * 60 * 1000) {
         newAlerts.push({ level: 'danger', text: `${name} lleva más de 24 h sin reportar` });
       }
-      const battery = batteries
-        .filter((entry) => Number(entry.dispositivo) === Number(device.id))
-        .sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora))[0];
-      if (battery && battery.porcentaje <= 20 && battery.estado !== 'CARGANDO') {
-        newAlerts.push({ level: 'warn', text: `${name} con batería baja (${battery.porcentaje}%)` });
+      if (device.battery_percent != null && device.battery_percent <= 20 && device.battery_state !== 'CARGANDO') {
+        newAlerts.push({ level: 'warn', text: `${name} con batería baja (${device.battery_percent}%)` });
       }
     });
     sims.forEach((item) => {

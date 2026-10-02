@@ -22,6 +22,8 @@ class RolePermission(BasePermission):
             'roles': 'usuarios',
         }.get(section, section)
         permisos = getattr(request.user, 'permisos', None)
+        if section == 'dashboard':
+            return isinstance(permisos, dict) and permisos.get('dashboard') is True
         if section in {'dispositivos', 'sims', 'usuarios'}:
             return isinstance(permisos, dict) and permisos.get(section) is True
         return True

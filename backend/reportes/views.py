@@ -3,17 +3,21 @@ from collections import defaultdict
 from datetime import date
 from io import BytesIO
 
+from django.db.models import OuterRef, Subquery, Sum
+from django.db.models.functions import TruncDate
 from django.http import HttpResponse
 from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from usuarios.permissions import RolePermission
 from auditoria.services import record_action
 from consumos.models import Consumo
 from dispositivos.models import Dispositivo
 from sims.models import Sim
+from bateria.models import RegistroBateria
 
 HEADER_FONT = Font(bold=True, color='FFFFFF')
 HEADER_FILL = PatternFill(fill_type='solid', fgColor='007F5F')
@@ -40,6 +44,63 @@ def _style_header(row_cells):
     for cell in row_cells:
         cell.font = HEADER_FONT
         cell.fill = HEADER_FILL
+
+
+class DashboardSummaryView(APIView):
+    permission_classes = [RolePermission]
+
+    def get(self, request):
+        try:
+            year = int(request.query_params.get('anio', timezone.localdate().year))
+            month = int(request.query_params.get('mes', timezone.localdate().month))
+        except (TypeError, ValueError):
+            return Response({'detail': 'El año y el mes deben ser números.'}, status=400)
+        if month < 1 or month > 12:
+            return Response({'detail': 'El mes debe estar entre 1 y 12.'}, status=400)
+
+        monthly = Consumo.objects.filter(periodo='diario', fecha__year=year, fecha__month=month)
+        consumption = monthly.annotate(
+            day=TruncDate('fecha', tzinfo=timezone.get_current_timezone())
+        ).values('day', 'sim_id').annotate(
+            consumo_datos_movil=Sum('consumo_datos_movil'),
+            consumo_wifi=Sum('consumo_wifi'),
+        ).order_by('day', 'sim_id')
+
+        latest_battery = RegistroBateria.objects.filter(
+            dispositivo_id=OuterRef('pk')
+        ).order_by('-fecha_hora')
+        devices = Dispositivo.objects.annotate(
+            battery_percent=Subquery(latest_battery.values('porcentaje')[:1]),
+            battery_state=Subquery(latest_battery.values('estado')[:1]),
+        ).values('id', 'modelo', 'device_uuid', 'activo', 'ultimo_contacto', 'battery_percent', 'battery_state')
+        sims = Sim.objects.select_related('operador').values('id', 'numero_telefonico', 'operador__nombre')
+
+        return Response({
+            'metrics': {
+                'devices': Dispositivo.objects.count(),
+                'sims': Sim.objects.count(),
+                'connected': Dispositivo.objects.filter(activo=True).count(),
+            },
+            'devices': list(devices),
+            'sims': [
+                {
+                    'id': sim['id'],
+                    'numero_telefonico': sim['numero_telefonico'],
+                    'operador_nombre': sim['operador__nombre'],
+                }
+                for sim in sims
+            ],
+            'consumption': [
+                {
+                    'fecha': row['day'].isoformat(),
+                    'periodo': 'diario',
+                    'sim': row['sim_id'],
+                    'consumo_datos_movil': row['consumo_datos_movil'] or 0,
+                    'consumo_wifi': row['consumo_wifi'] or 0,
+                }
+                for row in consumption
+            ],
+        })
 
 
 class SimMonthlyExportView(APIView):
