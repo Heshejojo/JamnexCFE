@@ -13,16 +13,16 @@
 
       <div class="nav-label">Módulos principales</div>
       <nav class="nav-menu">
-        <router-link to="/" class="nav-item" exact-active-class="active">
+        <router-link v-if="can('dashboard')" to="/" class="nav-item" exact-active-class="active">
           <span aria-hidden="true">⌂</span>Dashboard
         </router-link>
-        <router-link to="/dispositivos" class="nav-item" exact-active-class="active">
+        <router-link v-if="can('dispositivos')" to="/dispositivos" class="nav-item" exact-active-class="active">
           <span aria-hidden="true">▣</span>Dispositivos
         </router-link>
-        <router-link to="/sims" class="nav-item" exact-active-class="active">
+        <router-link v-if="can('sims')" to="/sims" class="nav-item" exact-active-class="active">
           <span aria-hidden="true">▤</span>SIMs
         </router-link>
-        <router-link to="/usuarios" class="nav-item" exact-active-class="active">
+        <router-link v-if="can('usuarios')" to="/usuarios" class="nav-item" exact-active-class="active">
           <span aria-hidden="true">♙</span>Usuarios
         </router-link>
       </nav>
@@ -63,6 +63,7 @@ const router = useRouter();
 
 const userName = computed(() => auth.user?.first_name || auth.user?.username || 'Administrador');
 const roleName = computed(() => auth.user?.rol?.nombre || 'Superadmin');
+const can = (key) => auth.user?.is_superuser || auth.user?.permisos?.[key] === true;
 const initials = computed(() => {
   const base = userName.value || 'A';
   return base

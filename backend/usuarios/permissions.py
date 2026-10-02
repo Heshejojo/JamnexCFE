@@ -7,6 +7,8 @@ class RolePermission(BasePermission):
     def has_module_permission(self, request):
         path = request.path.strip('/').split('/')
         section = path[1] if path and path[0] == 'api' and len(path) > 1 else 'dashboard'
+        if section == 'reportes' and len(path) > 2:
+            section = path[2]
         section = {
             'device': 'dispositivos',
             'dispositivos': 'dispositivos',
@@ -20,7 +22,9 @@ class RolePermission(BasePermission):
             'roles': 'usuarios',
         }.get(section, section)
         permisos = getattr(request.user, 'permisos', None)
-        return not isinstance(permisos, dict) or permisos.get(section, True)
+        if section in {'dispositivos', 'sims', 'usuarios'}:
+            return isinstance(permisos, dict) and permisos.get(section) is True
+        return True
 
     def has_permission(self, request, view):
         user = request.user

@@ -18,9 +18,9 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'username', 'first_name', 'last_name', 'email', 'rol',
-            'activo', 'permisos', 'ultimo_login', 'created_at', 'updated_at'
+            'activo', 'permisos', 'is_superuser', 'ultimo_login', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at', 'ultimo_login']
+        read_only_fields = ['created_at', 'updated_at', 'ultimo_login', 'is_superuser']
 
 
 class UsuarioAdminSerializer(serializers.ModelSerializer):
