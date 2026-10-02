@@ -34,9 +34,19 @@
 
 
       <div class="attention-panel">
-        <div class="attention-heading"><div><span class="hero-kicker">♧ &nbsp; Atención</span><h3>SIM con mayor consumo</h3></div><router-link to="/sims">Ver todas →</router-link></div>
-        <div class="attention-main"><div class="attention-icon">▥</div><div><strong>{{ topSim.label }}</strong><p>{{ topSim.value ? 'Línea con mayor consumo en el periodo.' : 'No se ha registrado consumo en el periodo.' }}</p><b>+{{ formatMb(topSim.value) }}</b><small>{{ formatMb(topSim.value) }}</small></div></div>
-        <div class="attention-footer">ⓘ &nbsp; El consumo de datos móviles se actualizará en tiempo real según la actividad de los dispositivos.</div>
+        <div class="attention-heading"><div><span class="hero-kicker">♧ &nbsp; Atención</span><h3>Top 5 SIMs por consumo</h3></div><router-link to="/sims">Ver todas →</router-link></div>
+        <ul v-if="topSims.length" class="top-list">
+          <li v-for="(s, i) in topSims" :key="s.id">
+            <span class="top-rank">{{ i + 1 }}</span>
+            <div class="top-info">
+              <strong>{{ s.label }}</strong>
+              <div class="top-track"><span :style="{ width: `${s.percent}%` }"></span></div>
+            </div>
+            <b>{{ formatMb(s.value) }}</b>
+          </li>
+        </ul>
+        <p v-else class="top-empty">No se ha registrado consumo este mes.</p>
+        <div class="attention-footer">ⓘ &nbsp; Consumo de datos móviles del mes actual, según la actividad de los dispositivos.</div>
       </div>
     </section>
 
@@ -60,6 +70,7 @@ const syncError = ref(false);
 const topSim = ref({ label: 'Sin datos', value: 0 });
 const weekBars = ref(Array.from({ length: 7 }, () => ({ label: '', value: 0, height: 5 })));
 const alerts = ref([]);
+const topSims = ref([]);
 const todayLabel = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
 
@@ -156,6 +167,21 @@ async function loadDashboard() {
           text: `${item.numero_telefonico || `SIM ${item.id}`} lleva ${pct.toFixed(0)}% del límite de 2 GB`,
         });
       }
+    });
+    const bySim = {};
+    monthly.forEach((item) => {
+      if (item.sim) bySim[item.sim] = (bySim[item.sim] || 0) + Number(item.consumo_datos_movil || 0);
+    });
+    const ranking = Object.entries(bySim).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const maxSim = ranking[0]?.[1] || 0;
+    topSims.value = ranking.map(([id, value]) => {
+      const found = sims.find((s) => String(s.id) === String(id));
+      return {
+        id,
+        label: found?.numero_telefonico || found?.operador_nombre || `SIM ${id}`,
+        value,
+        percent: maxSim ? Math.max(3, (value / maxSim) * 100) : 0,
+      };
     });
     alerts.value = newAlerts;
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
@@ -747,4 +773,13 @@ onBeforeUnmount(() => {
 .alerts-list li.warn { background: #fff8e8; border-color: #f59e0b; color: #92400e; }
 .alerts-list li.danger { background: #fff0ee; border-color: #ef4444; color: #b42318; }
 .alerts-ok { margin: 0; color: #167A39; font-size: 0.85rem; font-weight: 700; }
+.top-list { display: grid; gap: 12px; margin: 18px 0; padding: 0; list-style: none; }
+.top-list li { display: flex; align-items: center; gap: 12px; }
+.top-rank { width: 24px; height: 24px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; background: #E6F6EC; color: #167A39; font-size: 0.72rem; font-weight: 800; }
+.top-info { min-width: 0; flex: 1; }
+.top-info strong { display: block; overflow: hidden; color: #26423a; font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
+.top-track { height: 6px; margin-top: 5px; overflow: hidden; border-radius: 3px; background: #E6EDF0; }
+.top-track span { display: block; height: 100%; border-radius: inherit; background: #1E9B48; }
+.top-list li > b { flex-shrink: 0; color: #121A2B; font-size: 0.8rem; }
+.top-empty { margin: 22px 0; color: #8a9a94; font-size: 0.82rem; text-align: center; }
 </style>
