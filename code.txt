@@ -1,10 +1,31 @@
-joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter --version
-Command exited with code 128: fetch --tags
-Standard error: fatal: no es posible acceder a 'https://github.com/flutter/flutter.git/': CONNECT tunnel failed, response 403
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ cd ~/JamnexCFE/mobile
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter pub get
+Resolving dependencies... (1.4s)
+Downloading packages... (19.4s)
+  battery_plus 7.1.1 (7.1.2 available)
+  cli_util 0.4.2 (0.6.0 available)
+  connectivity_plus 7.3.1 (7.3.2 available)
+  dbus 0.7.15 (0.8.0 available)
+  device_info_plus 13.2.0 (13.3.0 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  lints 4.0.0 (6.1.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.3 (1.19.0 available)
+  nm 0.5.0 (0.6.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  platform 3.1.6 (3.2.0 available)
+  test_api 0.7.12 (0.7.14 available)
+  vector_math 2.4.0 (2.4.3 available)
+  xml 7.0.1 (7.1.0 available)
+Got dependencies!
+15 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter run
+No supported devices connected.
 
-
-Flutter 3.47.6 • channel stable • https://github.com/flutter/flutter.git
-Framework • revision 5fc346839b (hace 5 días) • 2026-09-30 15:02:49 -0700
-Engine • hash b8c8d3d8d5d0095127057f8a29ca8cc53da2167c (revision 692136cb65) (5 days ago) • 2026-09-30 00:56:59.000Z
-Tools • Dart 3.13.5 • DevTools 2.60.0
+The following devices were found, but are not supported by this project:
+Android SDK built for x86 (mobile) • emulator-5554 • unsupported • Android 8.0.0 (API 26) (unsupported) (emulator)
+Linux (desktop)                    • linux         • linux-x64   • Debian GNU/Linux 13 (trixie) 6.12.107+deb13-amd64
+If you would like your app to run on android or linux, consider running `flutter create .` to generate projects for these
+platforms.
 joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ 
