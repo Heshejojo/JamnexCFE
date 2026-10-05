@@ -1,0 +1,150 @@
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators
+6 available emulators:
+
+Id          • Name        • Manufacturer • Platform
+
+Android_10  • Android 10  • Generic      • android
+Android_11  • Android 11  • Generic      • android
+Android_14  • Android 14  • Generic      • android
+Android_8.1 • Android 8.1 • Generic      • android
+Android_8   • Android 8   • Generic      • android
+Android_9   • Android 9   • Generic      • android
+
+To run an emulator, run 'flutter emulators --launch <emulator id>'.
+To create a new emulator, run 'flutter emulators --create [--name xyz]'.
+
+You can find more information on managing emulators at the links below:
+  https://developer.android.com/studio/run/managing-avds
+  https://developer.android.com/studio/command-line/avdmanager
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators
+6 available emulators:
+
+Id          • Name        • Manufacturer • Platform
+
+Android_10  • Android 10  • Generic      • android
+Android_11  • Android 11  • Generic      • android
+Android_14  • Android 14  • Generic      • android
+Android_8.1 • Android 8.1 • Generic      • android
+Android_8   • Android 8   • Generic      • android
+Android_9   • Android 9   • Generic      • android
+
+To run an emulator, run 'flutter emulators --launch <emulator id>'.
+To create a new emulator, run 'flutter emulators --create [--name xyz]'.
+
+You can find more information on managing emulators at the links below:
+  https://developer.android.com/studio/run/managing-avds
+  https://developer.android.com/studio/command-line/avdmanager
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators --launch Android_8
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter devices
+Found 2 connected devices:
+  Android SDK built for x86 (mobile) • emulator-5554 • unsupported • Android 8.0.0 (API 26) (unsupported) (emulator)
+  Linux (desktop)                    • linux         • linux-x64   • Debian GNU/Linux 13 (trixie) 6.12.107+deb13-amd64
+
+Run "flutter emulators" to list and start any available device emulators.
+
+If you expected another device to be detected, please run "flutter doctor" to diagnose potential issues. You may also try
+increasing the time to wait for connected devices with the "--device-timeout" flag. Visit https://flutter.dev/setup/ for
+troubleshooting tips.
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter devices
+Found 1 connected device:
+  Linux (desktop) • linux • linux-x64 • Debian GNU/Linux 13 (trixie) 6.12.107+deb13-amd64
+
+Run "flutter emulators" to list and start any available device emulators.
+
+If you expected another device to be detected, please run "flutter doctor" to diagnose potential issues. You may also try
+increasing the time to wait for connected devices with the "--device-timeout" flag. Visit https://flutter.dev/setup/ for
+troubleshooting tips.
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators
+4 available emulators:
+
+Id         • Name       • Manufacturer • Platform
+
+Android_10 • Android 10 • Generic      • android
+Android_11 • Android 11 • Generic      • android
+Android_14 • Android 14 • Generic      • android
+Android_9  • Android 9  • Generic      • android
+
+To run an emulator, run 'flutter emulators --launch <emulator id>'.
+To create a new emulator, run 'flutter emulators --create [--name xyz]'.
+
+You can find more information on managing emulators at the links below:
+  https://developer.android.com/studio/run/managing-avds
+  https://developer.android.com/studio/command-line/avdmanager
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators --launch Android_9
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter devices
+Found 2 connected devices:
+  Android SDK built for x86 64 (mobile) • emulator-5554 • android-x64 • Android 9 (API 28) (emulator)
+  Linux (desktop)                       • linux         • linux-x64   • Debian GNU/Linux 13 (trixie) 6.12.107+deb13-amd64
+
+Run "flutter emulators" to list and start any available device emulators.
+
+If you expected another device to be detected, please run "flutter doctor" to diagnose potential issues. You may also try
+increasing the time to wait for connected devices with the "--device-timeout" flag. Visit https://flutter.dev/setup/ for
+troubleshooting tips.
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter run
+Launching lib/main.dart on Android SDK built for x86 64 in debug mode...
+Exception in thread "main" java.net.SocketException: Connection reset
+        at java.base/sun.nio.ch.NioSocketImpl.implRead(Unknown Source)
+        at java.base/sun.nio.ch.NioSocketImpl.read(Unknown Source)
+        at java.base/sun.nio.ch.NioSocketImpl$1.read(Unknown Source)
+        at java.base/java.net.Socket$SocketInputStream.implRead(Unknown Source)
+        at java.base/java.net.Socket$SocketInputStream.read(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketInputRecord.read(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketInputRecord.readHeader(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketInputRecord.decode(Unknown Source)
+        at java.base/sun.security.ssl.SSLTransport.decode(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.decode(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.readHandshakeRecord(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(Unknown Source)
+        at java.base/sun.net.www.protocol.https.HttpsClient.afterConnect(Unknown Source)
+        at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.followRedirect0(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.followRedirect(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(Unknown Source)
+        at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getInputStream(Unknown Source)
+        at org.gradle.wrapper.Download.downloadInternal(Download.java:58)
+        at org.gradle.wrapper.Download.download(Download.java:44)
+        at org.gradle.wrapper.Install$1.call(Install.java:61)
+        at org.gradle.wrapper.Install$1.call(Install.java:48)
+        at org.gradle.wrapper.ExclusiveFileAccessManager.access(ExclusiveFileAccessManager.java:65)
+        at org.gradle.wrapper.Install.createDist(Install.java:48)
+        at org.gradle.wrapper.WrapperExecutor.execute(WrapperExecutor.java:128)
+        at org.gradle.wrapper.GradleWrapperMain.main(GradleWrapperMain.java:61)
+Running Gradle task 'assembleDebug'...                            297,5s
+[!] Gradle threw an error while downloading artifacts from the network.
+Retrying Gradle Build: #1, wait time: 100ms
+Exception in thread "main" java.net.SocketException: Connection reset
+        at java.base/sun.nio.ch.NioSocketImpl.implRead(Unknown Source)
+        at java.base/sun.nio.ch.NioSocketImpl.read(Unknown Source)
+        at java.base/sun.nio.ch.NioSocketImpl$1.read(Unknown Source)
+        at java.base/java.net.Socket$SocketInputStream.implRead(Unknown Source)
+        at java.base/java.net.Socket$SocketInputStream.read(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketInputRecord.read(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketInputRecord.readHeader(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketInputRecord.decode(Unknown Source)
+        at java.base/sun.security.ssl.SSLTransport.decode(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.decode(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.readHandshakeRecord(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(Unknown Source)
+        at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(Unknown Source)
+        at java.base/sun.net.www.protocol.https.HttpsClient.afterConnect(Unknown Source)
+        at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.followRedirect0(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.followRedirect(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(Unknown Source)
+        at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(Unknown Source)
+        at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getInputStream(Unknown Source)
+        at org.gradle.wrapper.Download.downloadInternal(Download.java:58)
+        at org.gradle.wrapper.Download.download(Download.java:44)
+        at org.gradle.wrapper.Install$1.call(Install.java:61)
+        at org.gradle.wrapper.Install$1.call(Install.java:48)
+        at org.gradle.wrapper.ExclusiveFileAccessManager.access(ExclusiveFileAccessManager.java:65)
+        at org.gradle.wrapper.Install.createDist(Install.java:48)
+        at org.gradle.wrapper.WrapperExecutor.execute(WrapperExecutor.java:128)
+        at org.gradle.wrapper.GradleWrapperMain.main(GradleWrapperMain.java:61)
+Running Gradle task 'assembleDebug'...                            303,0s
+[!] Gradle threw an error while downloading artifacts from the network.
+Error: Gradle task assembleDebug failed with exit code 1
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ 
