@@ -1,91 +1,15 @@
-joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ sudo apt install -y openjdk-21-jdk
-[sudo] contraseña para joseluis: 
-Installing:                             
-  openjdk-21-jdk
-
-Installing dependencies:
-  ca-certificates-java  libatk-wrapper-java-jni  libxau-dev    openjdk-21-jdk-headless  x11proto-dev
-  fonts-dejavu-extra    libice-dev               libxcb1-dev   openjdk-21-jre           xorg-sgml-doctools
-  java-common           libsm-dev                libxdmcp-dev  openjdk-21-jre-headless  xtrans-dev
-  libatk-wrapper-java   libx11-dev               libxt-dev     uuid-dev
-
-Paquetes sugeridos:
-  default-jre  libsm-doc   libxcb-doc  openjdk-21-demo    visualvm              fonts-ipafont-mincho  | fonts-wqy-zenhei
-  libice-doc   libx11-doc  libxt-doc   openjdk-21-source  fonts-ipafont-gothic  fonts-wqy-microhei    fonts-indic
-
-Summary:
-  Upgrading: 0, Installing: 20, Removing: 0, Not Upgrading: 57
-  Download size: 133 MB
-  Space needed: 319 MB / 60.0 GB available
-
-Err:1 http://deb.debian.org/debian trixie/main amd64 ca-certificates-java all 20240118
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:2 http://deb.debian.org/debian trixie/main amd64 fonts-dejavu-extra all 2.37-8
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:3 http://deb.debian.org/debian trixie/main amd64 java-common all 0.76
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:4 http://deb.debian.org/debian trixie/main amd64 libatk-wrapper-java all 0.40.0-3
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:5 http://deb.debian.org/debian trixie/main amd64 libatk-wrapper-java-jni amd64 0.40.0-3+b3
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:6 http://deb.debian.org/debian trixie/main amd64 xorg-sgml-doctools all 1:1.11-1.1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:7 http://deb.debian.org/debian trixie/main amd64 x11proto-dev all 2024.1-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:8 http://deb.debian.org/debian trixie/main amd64 libice-dev amd64 2:1.1.1-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Ign:9 http://deb.debian.org/debian trixie/main amd64 uuid-dev amd64 2.41.5-0+deb13u1
-Err:10 http://deb.debian.org/debian trixie/main amd64 libsm-dev amd64 2:1.2.6-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:11 http://deb.debian.org/debian trixie/main amd64 libxau-dev amd64 1:1.0.11-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:12 http://deb.debian.org/debian trixie/main amd64 libxdmcp-dev amd64 1:1.1.5-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:13 http://deb.debian.org/debian trixie/main amd64 xtrans-dev all 1.4.0-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:14 http://deb.debian.org/debian trixie/main amd64 libxcb1-dev amd64 1.17.0-2+b1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:15 http://deb.debian.org/debian trixie/main amd64 libx11-dev amd64 2:1.8.12-1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:16 http://deb.debian.org/debian trixie/main amd64 libxt-dev amd64 1:1.2.1-1.2+b2
-  403  Forbidden [IP: 10.14.1.88 8080]
-Ign:17 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jre-headless amd64 21.0.12.1+1-1~deb13u1
-Ign:18 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jre amd64 21.0.12.1+1-1~deb13u1
-Ign:19 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jdk-headless amd64 21.0.12.1+1-1~deb13u1
-Ign:20 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jdk amd64 21.0.12.1+1-1~deb13u1
-Err:9 http://deb.debian.org/debian trixie/main amd64 uuid-dev amd64 2.41.5-0+deb13u1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:17 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jre-headless amd64 21.0.12.1+1-1~deb13u1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:18 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jre amd64 21.0.12.1+1-1~deb13u1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:19 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jdk-headless amd64 21.0.12.1+1-1~deb13u1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Err:20 http://deb.debian.org/debian trixie/main amd64 openjdk-21-jdk amd64 21.0.12.1+1-1~deb13u1
-  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/c/ca-certificates-java/ca-certificates-java_20240118_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/f/fonts-dejavu/fonts-dejavu-extra_2.37-8_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/j/java-common/java-common_0.76_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/j/java-atk-wrapper/libatk-wrapper-java_0.40.0-3_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/j/java-atk-wrapper/libatk-wrapper-java-jni_0.40.0-3%2bb3_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/x/xorg-sgml-doctools/xorg-sgml-doctools_1.11-1.1_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/x/xorgproto/x11proto-dev_2024.1-1_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libi/libice/libice-dev_1.1.1-1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://security.debian.org/debian-security/pool/updates/main/u/util-linux/uuid-dev_2.41.5-0%2bdeb13u1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libs/libsm/libsm-dev_1.2.6-1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libx/libxau/libxau-dev_1.0.11-1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libx/libxdmcp/libxdmcp-dev_1.1.5-1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/x/xtrans/xtrans-dev_1.4.0-1_all.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb1-dev_1.17.0-2%2bb1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libx/libx11/libx11-dev_1.8.12-1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://deb.debian.org/debian/pool/main/libx/libxt/libxt-dev_1.2.1-1.2%2bb2_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://security.debian.org/debian-security/pool/updates/main/o/openjdk-21/openjdk-21-jre-headless_21.0.12.1%2b1-1%7edeb13u1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://security.debian.org/debian-security/pool/updates/main/o/openjdk-21/openjdk-21-jre_21.0.12.1%2b1-1%7edeb13u1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://security.debian.org/debian-security/pool/updates/main/o/openjdk-21/openjdk-21-jdk-headless_21.0.12.1%2b1-1%7edeb13u1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: Fallo al obtener http://security.debian.org/debian-security/pool/updates/main/o/openjdk-21/openjdk-21-jdk_21.0.12.1%2b1-1%7edeb13u1_amd64.deb  403  Forbidden [IP: 10.14.1.88 8080]
-Error: No se pudieron obtener algunos archivos, ¿quizás deba ejecutar «apt-get update» o deba intentarlo de nuevo con --fix-missing?
-joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter config --jdk-dir /usr/lib/jvm/java-21-openjdk-amd64
-Setting "jdk-dir" value to "/usr/lib/jvm/java-21-openjdk-amd64".
 
 You may need to restart any open editors for them to read new settings.
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators --launch Android_8
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ cd ~/JamnexCFE/mobile
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter run
+Resolving dependencies... (1.7s)
+The current Dart SDK version is 3.7.2.
+
+Because agente_cfe depends on device_info_plus >=13.0.0 which requires SDK version >=3.10.0 <4.0.0, version solving failed.
+
+
+You can try the following suggestion to make the pubspec resolve:
+* Consider downgrading your constraint on device_info_plus: flutter pub add device_info_plus:^12.4.0
+Failed to update packages.
 joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ 
