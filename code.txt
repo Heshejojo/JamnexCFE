@@ -1,15 +1,10 @@
-
-You may need to restart any open editors for them to read new settings.
-joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter emulators --launch Android_8
-joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ cd ~/JamnexCFE/mobile
-joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter run
-Resolving dependencies... (1.7s)
-The current Dart SDK version is 3.7.2.
-
-Because agente_cfe depends on device_info_plus >=13.0.0 which requires SDK version >=3.10.0 <4.0.0, version solving failed.
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ flutter --version
+Command exited with code 128: fetch --tags
+Standard error: fatal: no es posible acceder a 'https://github.com/flutter/flutter.git/': CONNECT tunnel failed, response 403
 
 
-You can try the following suggestion to make the pubspec resolve:
-* Consider downgrading your constraint on device_info_plus: flutter pub add device_info_plus:^12.4.0
-Failed to update packages.
+Flutter 3.47.6 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision 5fc346839b (hace 5 días) • 2026-09-30 15:02:49 -0700
+Engine • hash b8c8d3d8d5d0095127057f8a29ca8cc53da2167c (revision 692136cb65) (5 days ago) • 2026-09-30 00:56:59.000Z
+Tools • Dart 3.13.5 • DevTools 2.60.0
 joseluis@debianpostgresdlspiloto:~/JamnexCFE/mobile$ 
