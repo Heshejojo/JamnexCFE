@@ -1,3 +1,6 @@
 echo 'export PATH="$PATH:$HOME/flutter/bin"' >> ~/.bashrc
 source ~/.bashrc
 flutter --version
+
+/home/joseluis/Android/cmdline-tools/latest/bin/sdkmanager
+/home/joseluis/Android/Sdk/cmdline-tools/latest/bin/sdkmanager
