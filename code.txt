@@ -1,37 +1,21 @@
-echo 'export PATH="$PATH:$HOME/flutter/bin"' >> ~/.bashrc
-source ~/.bashrc
-flutter --version
+joseluis@debianpostgresdlspiloto:~$ flutter doctor --android-licenses
+WARNING: The SDK Manager CLI tool (sdkmanager) is deprecated. Android CLI will be used instead.
+The 'android' binary can also be found in the cmdline-tools directory, and 'android sdk' is the replacement for 'sdkmanager'.
+To learn more about the Android CLI and how to use it, see the documentation (https://d.android.com/tools/agents/android-cli)
 
-/home/joseluis/Android/cmdline-tools/latest/bin/sdkmanager
-/home/joseluis/Android/Sdk/cmdline-tools/latest/bin/sdkmanager
+Warning: The --licenses option is no longer needed.
+joseluis@debianpostgresdlspiloto:~$ $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+WARNING: The SDK Manager CLI tool (sdkmanager) is deprecated. Android CLI will be used instead.
+The 'android' binary can also be found in the cmdline-tools directory, and 'android sdk' is the replacement for 'sdkmanager'.
+To learn more about the Android CLI and how to use it, see the documentation (https://d.android.com/tools/agents/android-cli)
 
-joseluis@debianpostgresdlspiloto:~$ flutter doctor
-Doctor summary (to see all details, run flutter doctor -v):
-[✓] Flutter (Channel stable, 3.29.3, on Debian GNU/Linux 13 (trixie) 6.12.107+deb13-amd64, locale es_MX.UTF-8)
-[!] Android toolchain - develop for Android devices (Android SDK version 36.0.0)
-    ✗ Android license status unknown.
-      Run `flutter doctor --android-licenses` to accept the SDK licenses.
-      See https://flutter.dev/to/linux-android-setup for more details.
-[✗] Chrome - develop for the web (Cannot find Chrome executable at google-chrome)
-    ! Cannot find Chrome. Try setting CHROME_EXECUTABLE to a Chrome executable.
-[✗] Linux toolchain - develop for Linux desktop
-    ✗ clang++ is required for Linux development.
-      It is likely available from your distribution (e.g.: apt install clang), or can be downloaded from
-      https://releases.llvm.org/
-    ✗ CMake is required for Linux development.
-      It is likely available from your distribution (e.g.: apt install cmake), or can be downloaded from
-      https://cmake.org/download/
-    ✗ ninja is required for Linux development.
-      It is likely available from your distribution (e.g.: apt install ninja-build), or can be downloaded from
-      https://github.com/ninja-build/ninja/releases
-    ✗ pkg-config is required for Linux development.
-      It is likely available from your distribution (e.g.: apt install pkg-config), or can be downloaded from
-      https://www.freedesktop.org/wiki/Software/pkg-config/
-[✓] Android Studio (version 2026.1.4)
-[✓] VS Code (version 1.138.0)
-[✓] Connected device (1 available)
-[!] Network resources
-    ✗ A network error occurred while checking "https://github.com/": Connection reset by peer
+Warning: The --licenses option is no longer needed.
+joseluis@debianpostgresdlspiloto:~$ export JAVA_HOME=/opt/android-studio/jbr
+joseluis@debianpostgresdlspiloto:~$ export PATH=$JAVA_HOME/bin:$PATH
+joseluis@debianpostgresdlspiloto:~$ $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+WARNING: The SDK Manager CLI tool (sdkmanager) is deprecated. Android CLI will be used instead.
+The 'android' binary can also be found in the cmdline-tools directory, and 'android sdk' is the replacement for 'sdkmanager'.
+To learn more about the Android CLI and how to use it, see the documentation (https://d.android.com/tools/agents/android-cli)
 
-! Doctor found issues in 4 categories.
+Warning: The --licenses option is no longer needed.
 joseluis@debianpostgresdlspiloto:~$ 
