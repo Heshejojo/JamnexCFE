@@ -48,16 +48,30 @@ class MainActivity : FlutterActivity() {
 		startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
 	}
 
-	private fun missingPhonePermissions(): Array<String> {
-		val permissions = mutableListOf(
-			Manifest.permission.READ_PHONE_STATE,
-		)
+	private fun requiredRuntimePermissions(): Array<String> {
+		val permissions = mutableListOf<String>()
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+			permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+		}
+
+		permissions.add(Manifest.permission.READ_PHONE_STATE)
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			permissions.add(Manifest.permission.READ_PHONE_NUMBERS)
 		}
+
 		return permissions.filter {
 			ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-		}.toTypedArray()
+		}.distinct().toTypedArray()
+	}
+
+	private fun requestRequiredPermissionsIfNeeded() {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+		val missingPermissions = requiredRuntimePermissions()
+		if (missingPermissions.isNotEmpty()) {
+			ActivityCompat.requestPermissions(this, missingPermissions, permissionRequestCode)
+		}
 	}
 
 	private fun fallbackPhoneNumber(): String? {
@@ -81,10 +95,31 @@ class MainActivity : FlutterActivity() {
 		}
 	}
 
+	private fun getDeviceSerial(): String? {
+		return runCatching {
+			when {
+				Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> Build.getSerial()
+				else -> Build.SERIAL
+			}
+		}.getOrNull()
+			?: runCatching {
+				Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+			}.getOrNull()
+	}
+
+	override fun onCreate(savedInstanceState: android.os.Bundle?) {
+		super.onCreate(savedInstanceState)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			requestRequiredPermissionsIfNeeded()
+		}
+		requestUsageAccessIfNeeded()
+	}
+
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
 			if (call.method == "getTelemetry") {
+				requestRequiredPermissionsIfNeeded()
 				requestUsageAccessIfNeeded()
 				Thread {
 					try {
@@ -102,7 +137,7 @@ class MainActivity : FlutterActivity() {
 			}
 
 			val missingPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-				missingPhonePermissions()
+				requiredRuntimePermissions()
 			} else {
 				emptyArray()
 			}
@@ -135,6 +170,17 @@ class MainActivity : FlutterActivity() {
 		}
 	}
 
+	override fun onRequestPermissionsResult(
+		requestCode: Int,
+		permissions: Array<out String>,
+		grantResults: IntArray,
+	) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+		if (requestCode == permissionRequestCode) {
+			requestUsageAccessIfNeeded()
+		}
+	}
+
 	private fun collectTelemetry(): Map<String, Any?> {
 		val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 		val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
@@ -162,9 +208,7 @@ class MainActivity : FlutterActivity() {
 			"storage_available_mb" to bytesToMb(availableStorageBytes.toLong()),
 			"battery_temperature_c" to temperature,
 			"battery_percent" to batteryPercent,
-			"serial" to runCatching {
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Build.getSerial() else Build.SERIAL
-			}.getOrNull(),
+			"serial" to getDeviceSerial(),
 			"imei_1" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(0) }.getOrNull() else null,
 			"imei_2" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(1) }.getOrNull() else null,
 			"mobile_data_day_mb" to queryNetworkUsage(NetworkCapabilities.TRANSPORT_CELLULAR, 1),

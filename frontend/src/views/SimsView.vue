@@ -133,11 +133,6 @@
       </aside>
     </div>
 
-    <div v-if="sims.length === 0" class="empty-state">
-      <p>No hay SIMs registradas aún</p>
-      <small>Las SIMs aparecerán aquí cuando se registren dispositivos</small>
-    </div>
-
     <div v-if="editingSim" class="modal-backdrop" @click.self="editingSim = false">
       <form class="edit-modal" @submit.prevent="saveEdit">
         <div class="modal-heading">
@@ -973,26 +968,6 @@ onBeforeUnmount(() => {
   font-size: 0.74rem;
   color: #64748b;
   text-align: right;
-}
-
-.empty-state {
-  grid-column: 1 / -1;
-  padding: 52px 18px;
-  text-align: center;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #f8fafc, #eef6ff);
-  border: 2px dashed #bfdbfe;
-}
-
-.empty-state p {
-  margin: 0 0 8px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.empty-state small {
-  color: #475569;
 }
 
 .empty-detail {
