@@ -47,16 +47,20 @@ class DeviceService {
         ramTotalMb = _bytesToMb(info.physicalRamSize);
         storageTotalMb = _bytesToMb(info.totalDiskSize);
         try {
-          final nativeSims = await _simChannel.invokeMethod<List<dynamic>>('getSimInfo');
+          final nativeSims =
+              await _simChannel.invokeMethod<List<dynamic>>('getSimInfo');
           sims = nativeSims
-              ?.map((item) => Map<String, dynamic>.from(item as Map))
-              .toList() ?? const [];
+                  ?.map((item) => Map<String, dynamic>.from(item as Map))
+                  .toList() ??
+              const [];
         } catch (_) {
           sims = const [];
         }
         try {
           telemetry = Map<String, dynamic>.from(
-            await _simChannel.invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ?? {},
+            await _simChannel
+                    .invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ??
+                {},
           );
         } catch (_) {
           telemetry = const {};
@@ -76,7 +80,7 @@ class DeviceService {
     }
 
     final connected = connectivityResult.isNotEmpty &&
-      !connectivityResult.contains(ConnectivityResult.none);
+        !connectivityResult.contains(ConnectivityResult.none);
 
     return DeviceSnapshot(
       deviceId: deviceId,
@@ -90,31 +94,34 @@ class DeviceService {
       ramTotalMb: _asInt(telemetry['ram_total_mb']) ?? ramTotalMb,
       ramUsedMb: _asInt(telemetry['ram_used_mb']),
       ramAvailableMb: _asInt(telemetry['ram_available_mb']),
-      almacenamientoTotalMb: _asInt(telemetry['storage_total_mb']) ?? storageTotalMb,
+      almacenamientoTotalMb:
+          _asInt(telemetry['storage_total_mb']) ?? storageTotalMb,
       almacenamientoUsadoMb: _asInt(telemetry['storage_used_mb']),
       almacenamientoDisponibleMb: _asInt(telemetry['storage_available_mb']),
-      batteryPercent: (telemetry['battery_percent'] as num?)?.toInt() ?? batteryLevel,
+      batteryPercent:
+          (telemetry['battery_percent'] as num?)?.toInt() ?? batteryLevel,
       batteryStatus: _mapBatteryState(batteryState),
       connectionType: summarizeConnectivity(connectivityResult),
       sims: sims,
-        batteryTemperature: (telemetry['battery_temperature_c'] as num?)?.toDouble(),
-        mobileDataMb: (telemetry['mobile_data_mb'] as num?)?.toDouble(),
-        mobileDataDayMb: (telemetry['mobile_data_day_mb'] as num?)?.toDouble(),
-        mobileDataWeekMb: (telemetry['mobile_data_week_mb'] as num?)?.toDouble(),
-        mobileDataLimitMb: (telemetry['mobile_data_limit_mb'] as num?)?.toDouble(),
-        wifiDataMb: (telemetry['wifi_data_mb'] as num?)?.toDouble(),
-        wifiSsid: telemetry['wifi_ssid']?.toString(),
-        wifiRssi: (telemetry['wifi_rssi'] as num?)?.toInt(),
-        wifiSignalPercent: (telemetry['wifi_signal_percent'] as num?)?.toInt(),
-        wifiFrequency: (telemetry['wifi_frequency_mhz'] as num?)?.toInt(),
-        wifiLinkSpeed: (telemetry['wifi_link_speed_mbps'] as num?)?.toInt(),
-        networkTechnology: telemetry['network_technology']?.toString(),
-        carrierName: telemetry['carrier_name']?.toString(),
-        carrierId: (telemetry['carrier_id'] as num?)?.toInt(),
-        roaming: telemetry['roaming'] == true,
-        applications: (telemetry['applications'] as List<dynamic>?)
-            ?.map((item) => Map<String, dynamic>.from(item as Map))
-            .toList() ??
+      batteryTemperature:
+          (telemetry['battery_temperature_c'] as num?)?.toDouble(),
+      mobileDataMb: (telemetry['mobile_data_mb'] as num?)?.toDouble(),
+      mobileDataDayMb: (telemetry['mobile_data_day_mb'] as num?)?.toDouble(),
+      mobileDataWeekMb: (telemetry['mobile_data_week_mb'] as num?)?.toDouble(),
+      mobileDataLimitMb:
+          (telemetry['mobile_data_limit_mb'] as num?)?.toDouble(),
+      wifiSsid: telemetry['wifi_ssid']?.toString(),
+      wifiRssi: (telemetry['wifi_rssi'] as num?)?.toInt(),
+      wifiSignalPercent: (telemetry['wifi_signal_percent'] as num?)?.toInt(),
+      wifiFrequency: (telemetry['wifi_frequency_mhz'] as num?)?.toInt(),
+      wifiLinkSpeed: (telemetry['wifi_link_speed_mbps'] as num?)?.toInt(),
+      networkTechnology: telemetry['network_technology']?.toString(),
+      carrierName: telemetry['carrier_name']?.toString(),
+      carrierId: (telemetry['carrier_id'] as num?)?.toInt(),
+      roaming: telemetry['roaming'] == true,
+      applications: (telemetry['applications'] as List<dynamic>?)
+              ?.map((item) => Map<String, dynamic>.from(item as Map))
+              .toList() ??
           const [],
       connected: connected,
       timestamp: DateTime.now(),
@@ -144,13 +151,13 @@ class DeviceService {
 
   static String summarizeConnectivity(List<ConnectivityResult> results) {
     if (results.contains(ConnectivityResult.wifi)) {
-        return 'Wi‑Fi';
+      return 'Wi‑Fi';
     }
     if (results.contains(ConnectivityResult.mobile)) {
-        return 'Datos móviles';
+      return 'Datos móviles';
     }
     if (results.contains(ConnectivityResult.none) || results.isEmpty) {
-        return 'Sin conexión';
+      return 'Sin conexión';
     }
     return 'No disponible';
   }

@@ -166,7 +166,8 @@ class DeviceConsumptionView(APIView):
         serializer = DeviceConsumptionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        total = data.get('consumo_total', data['consumo_datos_movil'] + data['consumo_wifi'])
+        mobile_data = data['consumo_datos_movil']
+        total = mobile_data
         fecha = data.get('fecha', timezone.now())
         sim_id = data.get('sim')
         sim = Sim.objects.filter(pk=sim_id).first() if sim_id else None
@@ -180,7 +181,7 @@ class DeviceConsumptionView(APIView):
         if consumo:
             consumo.sim = sim
             consumo.consumo_datos_movil = data['consumo_datos_movil']
-            consumo.consumo_wifi = data['consumo_wifi']
+            consumo.consumo_wifi = 0
             consumo.consumo_total = total
             consumo.fecha = fecha
             consumo.save(update_fields=[
@@ -191,7 +192,7 @@ class DeviceConsumptionView(APIView):
                 dispositivo=request.user,
                 sim=sim,
                 consumo_datos_movil=data['consumo_datos_movil'],
-                consumo_wifi=data['consumo_wifi'],
+                consumo_wifi=0,
                 consumo_total=total,
                 periodo=data['periodo'],
                 fecha=fecha,

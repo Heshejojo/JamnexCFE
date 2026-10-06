@@ -1,0 +1,56 @@
+from django.test import TestCase
+from rest_framework.test import APIClient
+
+from consumos.models import Consumo
+from dispositivos.models import Dispositivo
+
+
+class DeviceConsumptionMobileOnlyTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        registration = self.client.post(
+            '/api/device/register/',
+            {'device_uuid': 'mobile-consumption-test'},
+            format='json',
+        )
+        self.assertEqual(registration.status_code, 201)
+        self.device = Dispositivo.objects.get(pk=registration.data['device_id'])
+        self.device_headers = {
+            'HTTP_AUTHORIZATION': f"Device {registration.data['token']}",
+        }
+
+    def test_wifi_and_submitted_total_do_not_change_mobile_consumption(self):
+        response = self.client.post(
+            '/api/device/consumption/',
+            {
+                'consumo_datos_movil': 12.5,
+                'consumo_wifi': 900,
+                'consumo_total': 1000,
+                'periodo': 'diario',
+            },
+            format='json',
+            **self.device_headers,
+        )
+
+        self.assertEqual(response.status_code, 201)
+        consumption = Consumo.objects.get(dispositivo=self.device)
+        self.assertEqual(consumption.consumo_datos_movil, 12.5)
+        self.assertEqual(consumption.consumo_wifi, 0)
+        self.assertEqual(consumption.consumo_total, 12.5)
+        self.assertEqual(response.data['consumo_total'], 12.5)
+
+        self.client.post(
+            '/api/device/consumption/',
+            {
+                'consumo_datos_movil': 20,
+                'consumo_wifi': 700,
+                'consumo_total': 900,
+                'periodo': 'diario',
+            },
+            format='json',
+            **self.device_headers,
+        )
+        consumption.refresh_from_db()
+        self.assertEqual(consumption.consumo_datos_movil, 20)
+        self.assertEqual(consumption.consumo_wifi, 0)
+        self.assertEqual(consumption.consumo_total, 20)

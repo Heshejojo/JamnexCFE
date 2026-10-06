@@ -120,13 +120,12 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
       });
       if (snapshot.mobileDataMb != null ||
           snapshot.mobileDataDayMb != null ||
-          snapshot.mobileDataWeekMb != null ||
-          snapshot.wifiDataMb != null) {
+          snapshot.mobileDataWeekMb != null) {
         pendingEvents.add({
           'endpoint': '/device/consumption/',
           'payload': {
             'consumo_datos_movil': snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
-            'consumo_wifi': snapshot.wifiDataMb ?? 0,
+            'consumo_wifi': 0,
             'periodo': 'diario',
           },
         });
@@ -451,7 +450,6 @@ class _MonitoringPanel extends StatelessWidget {
                   ]
                 : [
                     _detail('Estado', current?.connected == true ? 'Conectado' : 'Sin conexión'),
-                    _detail('Consumo de hoy', _formatGb(current?.wifiDataMb)),
                     _detail('SSID', current?.wifiSsid ?? 'No disponible'),
                     _detail('Señal', current?.wifiSignalPercent == null ? 'No disponible' : '${current!.wifiSignalPercent}%'),
                     _detail('Frecuencia', current?.wifiFrequency == null ? 'No disponible' : '${current!.wifiFrequency} MHz'),
@@ -602,4 +600,3 @@ class DeviceSummaryCard extends StatelessWidget {
     );
   }
 }
-

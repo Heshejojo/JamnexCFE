@@ -17,7 +17,6 @@ import android.os.BatteryManager
 import android.os.Environment
 import android.os.Process
 import android.os.StatFs
-import android.net.NetworkCapabilities
 import android.telephony.TelephonyManager
 import android.content.pm.ApplicationInfo
 import android.telephony.SubscriptionManager
@@ -211,10 +210,9 @@ class MainActivity : FlutterActivity() {
 			"serial" to getDeviceSerial(),
 			"imei_1" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(0) }.getOrNull() else null,
 			"imei_2" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(1) }.getOrNull() else null,
-			"mobile_data_day_mb" to queryNetworkUsage(NetworkCapabilities.TRANSPORT_CELLULAR, 1),
-			"mobile_data_week_mb" to queryNetworkUsage(NetworkCapabilities.TRANSPORT_CELLULAR, 7),
+			"mobile_data_day_mb" to queryMobileDataUsage(1),
+			"mobile_data_week_mb" to queryMobileDataUsage(7),
 			"mobile_data_limit_mb" to 2048.0,
-			"wifi_data_mb" to queryNetworkUsage(NetworkCapabilities.TRANSPORT_WIFI, 1),
 			"wifi_ssid" to wifiInfo?.ssid?.removePrefix("\"")?.removeSuffix("\""),
 			"wifi_rssi" to wifiInfo?.rssi?.takeUnless { it == -127 },
 			"wifi_signal_percent" to wifiSignalPercent,
@@ -236,23 +234,28 @@ class MainActivity : FlutterActivity() {
 		return value / (1024.0 * 1024.0)
 	}
 
-	private fun queryNetworkUsage(transport: Int, days: Int): Double? {
+	private fun queryMobileDataUsage(days: Int): Double? {
 		return try {
 			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
 			val manager = getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 			val end = System.currentTimeMillis()
-			val start = end - (days * 24L * 60L * 60L * 1000L)
-			val networkType = if (transport == NetworkCapabilities.TRANSPORT_WIFI) {
-				ConnectivityManager.TYPE_WIFI
-			} else {
-				ConnectivityManager.TYPE_MOBILE
+			val startCalendar = java.util.Calendar.getInstance().apply {
+				timeInMillis = end
+				set(java.util.Calendar.HOUR_OF_DAY, 0)
+				set(java.util.Calendar.MINUTE, 0)
+				set(java.util.Calendar.SECOND, 0)
+				set(java.util.Calendar.MILLISECOND, 0)
+				add(java.util.Calendar.DAY_OF_YEAR, -(days - 1))
 			}
-			val subscriberId = if (networkType == ConnectivityManager.TYPE_MOBILE) {
-				getSystemService(Context.TELEPHONY_SERVICE).let { it as TelephonyManager }.subscriberId
-			} else {
-				null
-			}
-			val bucket = manager.querySummaryForDevice(networkType, subscriberId, start, end)
+			val subscriberId = getSystemService(Context.TELEPHONY_SERVICE)
+				.let { it as TelephonyManager }
+				.subscriberId
+			val bucket = manager.querySummaryForDevice(
+				ConnectivityManager.TYPE_MOBILE,
+				subscriberId,
+				startCalendar.timeInMillis,
+				end,
+			)
 			(bucket.rxBytes + bucket.txBytes).toDouble() / (1024.0 * 1024.0)
 		} catch (_: Exception) {
 			null

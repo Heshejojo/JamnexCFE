@@ -21,7 +21,6 @@ class DeviceSnapshot {
   final double? mobileDataDayMb;
   final double? mobileDataWeekMb;
   final double? mobileDataLimitMb;
-  final double? wifiDataMb;
   final String? wifiSsid;
   final int? wifiRssi;
   final int? wifiSignalPercent;
@@ -59,7 +58,6 @@ class DeviceSnapshot {
     this.mobileDataDayMb,
     this.mobileDataWeekMb,
     this.mobileDataLimitMb,
-    this.wifiDataMb,
     this.wifiSsid,
     this.wifiRssi,
     this.wifiSignalPercent,

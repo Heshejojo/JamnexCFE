@@ -143,8 +143,10 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onActivated, onBeforeUnmount, onDeactivated, reactive, ref } from 'vue';
 import api from '../services/api';
+
+defineOptions({ name: 'DispositivosView' });
 
 const items = ref([]);
 const selectedDevice = ref(null);
@@ -378,14 +380,20 @@ function selectDetail(item) {
 
 let refreshTimer = null;
 
-onMounted(() => {
+function activateView() {
   loadData();
   refreshTimer = setInterval(loadData, 30000);
-});
+}
 
-onBeforeUnmount(() => {
-  if (refreshTimer) clearInterval(refreshTimer);
-});
+function deactivateView() {
+  if (!refreshTimer) return;
+  clearInterval(refreshTimer);
+  refreshTimer = null;
+}
+
+onActivated(activateView);
+onDeactivated(deactivateView);
+onBeforeUnmount(deactivateView);
 </script>
 
 <style scoped>
