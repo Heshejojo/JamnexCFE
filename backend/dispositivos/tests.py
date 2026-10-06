@@ -37,8 +37,8 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
         self.assertEqual(response.status_code, 201)
         consumption = Consumo.objects.get(dispositivo=self.device)
         self.assertEqual(consumption.consumo_datos_movil, 12.5)
+        self.assertEqual(consumption.consumo_wifi, 0)
         self.assertEqual(consumption.consumo_total, 12.5)
-        self.assertFalse(hasattr(consumption, 'consumo_wifi'))
         self.assertEqual(response.data['consumo_total'], 12.5)
 
         self.client.post(
@@ -54,6 +54,7 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
         )
         consumption.refresh_from_db()
         self.assertEqual(consumption.consumo_datos_movil, 20)
+        self.assertEqual(consumption.consumo_wifi, 0)
         self.assertEqual(consumption.consumo_total, 20)
 
     def test_wifi_network_record_stores_only_connection_status(self):

@@ -19,6 +19,7 @@ class Consumo(models.Model):
     dispositivo = models.ForeignKey(Dispositivo, on_delete=models.CASCADE, related_name='consumos')
     sim = models.ForeignKey(Sim, on_delete=models.SET_NULL, null=True, blank=True, related_name='consumos')
     consumo_datos_movil = models.FloatField(default=0)
+    consumo_wifi = models.FloatField(default=0)
     consumo_total = models.FloatField(default=0)
     fecha = models.DateTimeField()
     periodo = models.CharField(max_length=30, choices=PERIODICIDAD_CHOICES, default='diario')
