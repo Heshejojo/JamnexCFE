@@ -48,7 +48,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
   String _status = 'Pendiente';
   String _lastSync = 'Nunca';
   DeviceSnapshot? _snapshot;
-  String _message = 'Preparado para enviar datos del equipo al backend.';
+  String _message = 'Listo para sincronizar el dispositivo con Jamnex.';
 
   @override
   void initState() {
@@ -89,8 +89,10 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           _snapshot = snapshot;
         });
       }
-      final deviceUuid = snapshot.deviceId ?? 'flutter-${DateTime.now().millisecondsSinceEpoch}';
-      final devicePayload = snapshot.toBackendPayload()..['device_uuid'] = deviceUuid;
+      final deviceUuid = snapshot.deviceId ??
+          'flutter-${DateTime.now().millisecondsSinceEpoch}';
+      final devicePayload = snapshot.toBackendPayload()
+        ..['device_uuid'] = deviceUuid;
       final statusPayload = <String, dynamic>{
         'device_uuid': deviceUuid,
         'battery_percent': snapshot.batteryPercent,
@@ -105,7 +107,8 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         'battery_temperature': snapshot.batteryTemperature,
         'timestamp': snapshot.timestamp.toUtc().toIso8601String(),
       };
-      pendingEvents.add({'endpoint': '/device/status/', 'payload': statusPayload});
+      pendingEvents
+          .add({'endpoint': '/device/status/', 'payload': statusPayload});
       pendingEvents.add({
         'endpoint': '/device/network/',
         'payload': {
@@ -124,7 +127,8 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         pendingEvents.add({
           'endpoint': '/device/consumption/',
           'payload': {
-            'consumo_datos_movil': snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
+            'consumo_datos_movil':
+                snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
             'consumo_wifi': 0,
             'periodo': 'diario',
           },
@@ -144,7 +148,8 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         pendingEvents.add({
           'endpoint': '/device/sim/',
           'payload': {
-            'sim_uuid': sim['subscription_id']?.toString() ?? 'sim-${deviceUuid}-${sim['slot'] ?? 0}',
+            'sim_uuid': sim['subscription_id']?.toString() ??
+                'sim-${deviceUuid}-${sim['slot'] ?? 0}',
             'iccid': sim['iccid'],
             'slot': sim['slot'],
             'operador_nombre': sim['operador'],
@@ -161,7 +166,8 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
       }
       await _apiService.registerDevice(devicePayload);
       await _syncProvider.retry((item) async {
-        final payload = Map<String, dynamic>.from(item['payload'] as Map? ?? {});
+        final payload =
+            Map<String, dynamic>.from(item['payload'] as Map? ?? {});
         payload['device_uuid'] = deviceUuid;
         await _apiService.postDeviceJson(item['endpoint'] as String, payload);
       });
@@ -176,7 +182,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         _snapshot = snapshot;
         _status = 'Sincronizado';
         _lastSync = DateTime.now().toLocal().toString().substring(0, 16);
-        _message = 'Datos del dispositivo enviados al backend.';
+        _message = 'Dispositivo sincronizado correctamente.';
       });
     } catch (error) {
       for (final event in pendingEvents) {
@@ -248,14 +254,16 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                   ? const DeviceSummaryCard(
                       title: 'Equipo no revisado',
                       value: 'Sin datos aún',
-                      subtitle: 'Presiona sincronizar para recoger información.',
+                      subtitle:
+                          'Presiona sincronizar para recoger información.',
                       icon: Icons.phone_android_rounded,
                       color: Color(0xFF3B82F6),
                     )
                   : DeviceSummaryCard(
                       title: _snapshot!.fabricante ?? 'Dispositivo',
                       value: _snapshot!.modelo ?? 'Modelo no disponible',
-                      subtitle: '${_snapshot!.versionAndroid ?? 'Android no disponible'} · ${_snapshot!.batteryPercent ?? 0}% batería\nIMEI: ${_snapshot!.imei1 ?? 'No disponible'} · Serie: ${_snapshot!.serial ?? 'No disponible'}',
+                      subtitle:
+                          '${_snapshot!.versionAndroid ?? 'Android no disponible'} · ${_snapshot!.batteryPercent ?? 0}% batería\nIMEI: ${_snapshot!.imei1 ?? 'No disponible'} · Serie: ${_snapshot!.serial ?? 'No disponible'}',
                       icon: Icons.phone_android_rounded,
                       color: const Color(0xFF2563EB),
                     ),
@@ -282,7 +290,8 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                   children: [
                     const Text(
                       'Sincronización',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 10),
                     Text(_message),
@@ -297,10 +306,13 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.sync_rounded),
-                        label: Text(_isLoading ? 'Enviando...' : 'Enviar datos al backend'),
+                        label: Text(_isLoading
+                            ? 'Sincronizando...'
+                            : 'Sincronizar dispositivo'),
                       ),
                     ),
                   ],
@@ -328,7 +340,8 @@ class _MobileDataHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final used = snapshot?.mobileDataDayMb;
     final limit = snapshot?.mobileDataLimitMb ?? 2048;
-    final progress = used == null ? 0.0 : (used / limit).clamp(0.0, 1.0).toDouble();
+    final progress =
+        used == null ? 0.0 : (used / limit).clamp(0.0, 1.0).toDouble();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -343,13 +356,22 @@ class _MobileDataHero extends StatelessWidget {
             children: [
               Icon(Icons.data_usage_rounded, color: Colors.white),
               SizedBox(width: 10),
-              Text('Datos móviles', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+              Text('Datos móviles',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 18),
-          Text(_formatGb(used), style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900)),
+          Text(_formatGb(used),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          const Text('Usados hoy', style: TextStyle(color: Color(0xFFCCFBF1), fontSize: 13)),
+          const Text('Usados hoy',
+              style: TextStyle(color: Color(0xFFCCFBF1), fontSize: 13)),
           const SizedBox(height: 18),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -357,19 +379,24 @@ class _MobileDataHero extends StatelessWidget {
               value: progress,
               minHeight: 10,
               backgroundColor: const Color(0xFF115E59),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFDE68A)),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFFFDE68A)),
             ),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${(progress * 100).toStringAsFixed(1)}% del límite', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-              Text('Límite ${_formatGb(limit)}', style: const TextStyle(color: Color(0xFFCCFBF1))),
+              Text('${(progress * 100).toStringAsFixed(1)}% del límite',
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
+              Text('Límite ${_formatGb(limit)}',
+                  style: const TextStyle(color: Color(0xFFCCFBF1))),
             ],
           ),
           const SizedBox(height: 14),
-          Text('Últimos 7 días: ${_formatGb(snapshot?.mobileDataWeekMb)}', style: const TextStyle(color: Color(0xFFCCFBF1))),
+          Text('Últimos 7 días: ${_formatGb(snapshot?.mobileDataWeekMb)}',
+              style: const TextStyle(color: Color(0xFFCCFBF1))),
         ],
       ),
     );
@@ -388,7 +415,9 @@ class _MonitoringPanel extends StatelessWidget {
 
   String _value(Map<String, dynamic> sim, String key) {
     final value = sim[key];
-    return value == null || value.toString().isEmpty ? 'No disponible' : value.toString();
+    return value == null || value.toString().isEmpty
+        ? 'No disponible'
+        : value.toString();
   }
 
   Widget _detail(String label, String value) {
@@ -399,9 +428,13 @@ class _MonitoringPanel extends StatelessWidget {
         children: [
           SizedBox(
             width: 116,
-            child: Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+            child: Text(label,
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12))),
+          Expanded(
+              child: Text(value,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 12))),
         ],
       ),
     );
@@ -414,7 +447,8 @@ class _MonitoringPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Supervisión del dispositivo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        const Text('Supervisión del dispositivo',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 10),
         _resourceCard(
           title: 'Sistema',
@@ -423,9 +457,12 @@ class _MonitoringPanel extends StatelessWidget {
             _detail('RAM total', _formatGb(current?.ramTotalMb)),
             _detail('RAM usada', _formatGb(current?.ramUsedMb)),
             _detail('RAM libre', _formatGb(current?.ramAvailableMb)),
-            _detail('Almacenamiento total', _formatGb(current?.almacenamientoTotalMb)),
-            _detail('Almacenamiento usado', _formatGb(current?.almacenamientoUsadoMb)),
-            _detail('Almacenamiento libre', _formatGb(current?.almacenamientoDisponibleMb)),
+            _detail('Almacenamiento total',
+                _formatGb(current?.almacenamientoTotalMb)),
+            _detail('Almacenamiento usado',
+                _formatGb(current?.almacenamientoUsadoMb)),
+            _detail('Almacenamiento libre',
+                _formatGb(current?.almacenamientoDisponibleMb)),
           ],
           expandable: true,
         ),
@@ -435,30 +472,56 @@ class _MonitoringPanel extends StatelessWidget {
           elevation: 0,
           color: Colors.white,
           child: ExpansionTile(
-            leading: Icon(usingMobile ? Icons.signal_cellular_alt_rounded : Icons.wifi_rounded, color: const Color(0xFF2563EB)),
-            title: Text(current?.connectionType ?? 'Sin datos', style: const TextStyle(fontWeight: FontWeight.w800)),
+            leading: Icon(
+                usingMobile
+                    ? Icons.signal_cellular_alt_rounded
+                    : Icons.wifi_rounded,
+                color: const Color(0xFF2563EB)),
+            title: Text(current?.connectionType ?? 'Sin datos',
+                style: const TextStyle(fontWeight: FontWeight.w800)),
             subtitle: Text(usingMobile ? 'Datos móviles' : 'Red Wi-Fi'),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             children: usingMobile
                 ? [
                     _detail('Consumo hoy', _formatGb(current?.mobileDataDayMb)),
-                    _detail('Últimos 7 días', _formatGb(current?.mobileDataWeekMb)),
+                    _detail(
+                        'Últimos 7 días', _formatGb(current?.mobileDataWeekMb)),
                     _detail('Límite', _formatGb(current?.mobileDataLimitMb)),
-                    _detail('Tecnología', current?.networkTechnology ?? 'No disponible'),
-                    _detail('Operador', current?.carrierName ?? 'No disponible'),
-                    _detail('Roaming', current?.roaming == true ? 'Activo' : 'Inactivo'),
+                    _detail('Tecnología',
+                        current?.networkTechnology ?? 'No disponible'),
+                    _detail(
+                        'Operador', current?.carrierName ?? 'No disponible'),
+                    _detail('Roaming',
+                        current?.roaming == true ? 'Activo' : 'Inactivo'),
                   ]
                 : [
-                    _detail('Estado', current?.connected == true ? 'Conectado' : 'Sin conexión'),
+                    _detail(
+                        'Estado',
+                        current?.connected == true
+                            ? 'Conectado'
+                            : 'Sin conexión'),
                     _detail('SSID', current?.wifiSsid ?? 'No disponible'),
-                    _detail('Señal', current?.wifiSignalPercent == null ? 'No disponible' : '${current!.wifiSignalPercent}%'),
-                    _detail('Frecuencia', current?.wifiFrequency == null ? 'No disponible' : '${current!.wifiFrequency} MHz'),
-                    _detail('Velocidad de enlace', current?.wifiLinkSpeed == null ? 'No disponible' : '${current!.wifiLinkSpeed} Mbps'),
+                    _detail(
+                        'Señal',
+                        current?.wifiSignalPercent == null
+                            ? 'No disponible'
+                            : '${current!.wifiSignalPercent}%'),
+                    _detail(
+                        'Frecuencia',
+                        current?.wifiFrequency == null
+                            ? 'No disponible'
+                            : '${current!.wifiFrequency} MHz'),
+                    _detail(
+                        'Velocidad de enlace',
+                        current?.wifiLinkSpeed == null
+                            ? 'No disponible'
+                            : '${current!.wifiLinkSpeed} Mbps'),
                   ],
           ),
         ),
         const SizedBox(height: 14),
-        const Text('Estado de SIM', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const Text('Estado de SIM',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         if (current == null || current.sims.isEmpty)
           const Text('No se detectaron SIM o faltan permisos.')
@@ -471,22 +534,34 @@ class _MonitoringPanel extends StatelessWidget {
               elevation: 0,
               color: Colors.white,
               child: ExpansionTile(
-                leading: Icon(sim['activa'] == true ? Icons.sim_card_rounded : Icons.sim_card_alert_rounded),
-                title: Text(_value(sim, 'operador'), style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text('SIM ${index + 1} · ${sim['esim'] == true ? 'eSIM' : 'Física'}'),
+                leading: Icon(sim['activa'] == true
+                    ? Icons.sim_card_rounded
+                    : Icons.sim_card_alert_rounded),
+                title: Text(_value(sim, 'operador'),
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text(
+                    'SIM ${index + 1} · ${sim['esim'] == true ? 'eSIM' : 'Física'}'),
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 children: [
-                  _detail('Estado', sim['activa'] == true ? 'Activa' : 'Inactiva'),
-                  _detail('Tipo hardware', sim['esim'] == true ? 'eSIM / digital' : 'SIM física'),
+                  _detail(
+                      'Estado', sim['activa'] == true ? 'Activa' : 'Inactiva'),
+                  _detail('Tipo hardware',
+                      sim['esim'] == true ? 'eSIM / digital' : 'SIM física'),
                   _detail('Operador', _value(sim, 'operador')),
                   _detail('País', _value(sim, 'pais')),
-                  _detail('MCC / MNC', '${_value(sim, 'mcc')} / ${_value(sim, 'mnc')}'),
+                  _detail('MCC / MNC',
+                      '${_value(sim, 'mcc')} / ${_value(sim, 'mnc')}'),
                   _detail('Carrier ID', _value(sim, 'carrier_id')),
                   _detail('Número celular', _value(sim, 'numero')),
                   _detail('ICCID', _value(sim, 'iccid')),
                   _detail('ID SIM', _value(sim, 'subscription_id')),
-                  _detail('Ranura', sim['slot'] is num ? 'Ranura ${(sim['slot'] as num).toInt() + 1}' : _value(sim, 'slot')),
-                  _detail('Tecnología', current.networkTechnology ?? 'No disponible'),
+                  _detail(
+                      'Ranura',
+                      sim['slot'] is num
+                          ? 'Ranura ${(sim['slot'] as num).toInt() + 1}'
+                          : _value(sim, 'slot')),
+                  _detail('Tecnología',
+                      current.networkTechnology ?? 'No disponible'),
                   _detail('Roaming', current.roaming ? 'Activo' : 'Inactivo'),
                 ],
               ),
@@ -496,7 +571,11 @@ class _MonitoringPanel extends StatelessWidget {
     );
   }
 
-  Widget _resourceCard({required String title, required IconData icon, required List<Widget> children, bool expandable = false}) {
+  Widget _resourceCard(
+      {required String title,
+      required IconData icon,
+      required List<Widget> children,
+      bool expandable = false}) {
     if (expandable) {
       return Card(
         margin: EdgeInsets.zero,
@@ -504,7 +583,8 @@ class _MonitoringPanel extends StatelessWidget {
         color: Colors.white,
         child: ExpansionTile(
           leading: Icon(icon, color: const Color(0xFF8B5CF6)),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           children: children,
         ),
@@ -583,14 +663,17 @@ class DeviceSummaryCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 18),
                 ),
                 const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(value,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
               ],
             ),
