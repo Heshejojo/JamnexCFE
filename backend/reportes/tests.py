@@ -33,7 +33,6 @@ class DashboardSummaryPermissionTest(TestCase):
             fecha=timezone.now(),
             periodo='diario',
             consumo_datos_movil=120,
-            consumo_wifi=30,
         )
 
     def test_dashboard_permission_gets_summary_without_device_inventory(self):
@@ -47,5 +46,6 @@ class DashboardSummaryPermissionTest(TestCase):
         self.assertEqual(response.data['metrics']['devices'], 1)
         self.assertEqual(response.data['metrics']['sims'], 1)
         self.assertEqual(response.data['consumption'][0]['consumo_datos_movil'], 120)
+        self.assertNotIn('consumo_wifi', response.data['consumption'][0])
         self.assertNotIn('serial', response.data['devices'][0])
         self.assertEqual(self.client.get('/api/dispositivos/').status_code, 403)

@@ -63,7 +63,6 @@ class DashboardSummaryView(APIView):
             day=TruncDate('fecha', tzinfo=timezone.get_current_timezone())
         ).values('day', 'sim_id').annotate(
             consumo_datos_movil=Sum('consumo_datos_movil'),
-            consumo_wifi=Sum('consumo_wifi'),
         ).order_by('day', 'sim_id')
 
         latest_battery = RegistroBateria.objects.filter(
@@ -96,7 +95,6 @@ class DashboardSummaryView(APIView):
                     'periodo': 'diario',
                     'sim': row['sim_id'],
                     'consumo_datos_movil': row['consumo_datos_movil'] or 0,
-                    'consumo_wifi': row['consumo_wifi'] or 0,
                 }
                 for row in consumption
             ],

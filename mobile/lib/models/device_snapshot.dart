@@ -21,11 +21,6 @@ class DeviceSnapshot {
   final double? mobileDataDayMb;
   final double? mobileDataWeekMb;
   final double? mobileDataLimitMb;
-  final String? wifiSsid;
-  final int? wifiRssi;
-  final int? wifiSignalPercent;
-  final int? wifiFrequency;
-  final int? wifiLinkSpeed;
   final String? networkTechnology;
   final String? carrierName;
   final int? carrierId;
@@ -58,11 +53,6 @@ class DeviceSnapshot {
     this.mobileDataDayMb,
     this.mobileDataWeekMb,
     this.mobileDataLimitMb,
-    this.wifiSsid,
-    this.wifiRssi,
-    this.wifiSignalPercent,
-    this.wifiFrequency,
-    this.wifiLinkSpeed,
     this.networkTechnology,
     this.carrierName,
     this.carrierId,

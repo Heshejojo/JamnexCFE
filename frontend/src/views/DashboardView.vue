@@ -72,7 +72,7 @@ const nowDate = new Date();
 const selectedMonth = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}`;
 const monthLabel = nowDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 const topSims = ref([]);
-const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, wifi: 0, consumption: 0 });
+const metrics = reactive({ devices: 0, sims: 0, connected: 0, stale: 0, mobile: 0, consumption: 0 });
 
 function asList(data) {
   return Array.isArray(data) ? data : data?.results || data?.value || [];
@@ -101,7 +101,6 @@ async function loadDashboard() {
     metrics.sims = summary.metrics.sims;
     metrics.connected = summary.metrics.connected;
     metrics.mobile = monthly.reduce((sum, item) => sum + Number(item.consumo_datos_movil || 0), 0);
-    metrics.wifi = monthly.reduce((sum, item) => sum + Number(item.consumo_wifi || 0), 0);
     metrics.consumption = metrics.mobile;
 
     // Barras reales de los últimos 7 días

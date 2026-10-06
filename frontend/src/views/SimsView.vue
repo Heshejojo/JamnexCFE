@@ -230,12 +230,10 @@ async function loadSims() {
         return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` === todayKey;
       });
       const consumo_datos_movil_hoy = Number(todayRecord?.consumo_datos_movil || 0);
-      const consumo_wifi = 0;
       return {
         ...sim,
         consumo_datos_movil,
         consumo_datos_movil_hoy,
-        consumo_wifi,
         operador_nombre: sim.operador_nombre || sim.operador?.nombre || (typeof sim.operador === 'string' ? sim.operador : 'N/A'),
         tipo_red: networks
           .filter((network) => network.sim === sim.id)

@@ -113,12 +113,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         'endpoint': '/device/network/',
         'payload': {
           'tipo_conexion': _networkType(snapshot.connectionType),
-          'ssid': snapshot.wifiSsid,
-          'rssi': snapshot.wifiRssi,
-          'frecuencia': snapshot.wifiFrequency,
-          'velocidad': snapshot.wifiLinkSpeed,
-          'tipo_red_movil': snapshot.networkTechnology,
-          'operador': snapshot.carrierId,
         },
       });
       if (snapshot.mobileDataMb != null ||
@@ -129,7 +123,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           'payload': {
             'consumo_datos_movil':
                 snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
-            'consumo_wifi': 0,
             'periodo': 'diario',
           },
         });
@@ -138,7 +131,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
             'endpoint': '/device/consumption/',
             'payload': {
               'consumo_datos_movil': snapshot.mobileDataWeekMb,
-              'consumo_wifi': 0,
               'periodo': 'semanal',
             },
           });
@@ -479,7 +471,11 @@ class _MonitoringPanel extends StatelessWidget {
                 color: const Color(0xFF2563EB)),
             title: Text(current?.connectionType ?? 'Sin datos',
                 style: const TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: Text(usingMobile ? 'Datos móviles' : 'Red Wi-Fi'),
+            subtitle: Text(usingMobile
+                ? 'Datos móviles'
+                : current?.connectionType == 'Wi‑Fi'
+                    ? 'Wi-Fi en uso'
+                    : 'Wi-Fi no está en uso'),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             children: usingMobile
                 ? [
@@ -497,25 +493,9 @@ class _MonitoringPanel extends StatelessWidget {
                 : [
                     _detail(
                         'Estado',
-                        current?.connected == true
-                            ? 'Conectado'
-                            : 'Sin conexión'),
-                    _detail('SSID', current?.wifiSsid ?? 'No disponible'),
-                    _detail(
-                        'Señal',
-                        current?.wifiSignalPercent == null
-                            ? 'No disponible'
-                            : '${current!.wifiSignalPercent}%'),
-                    _detail(
-                        'Frecuencia',
-                        current?.wifiFrequency == null
-                            ? 'No disponible'
-                            : '${current!.wifiFrequency} MHz'),
-                    _detail(
-                        'Velocidad de enlace',
-                        current?.wifiLinkSpeed == null
-                            ? 'No disponible'
-                            : '${current!.wifiLinkSpeed} Mbps'),
+                        current?.connectionType == 'Wi‑Fi'
+                            ? 'Wi-Fi en uso'
+                            : 'Wi-Fi no está en uso'),
                   ],
           ),
         ),

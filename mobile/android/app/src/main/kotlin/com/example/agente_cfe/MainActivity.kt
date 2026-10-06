@@ -1,11 +1,9 @@
 package com.example.agente_cfe
 
 import android.Manifest
-import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.app.ActivityManager
 import android.net.ConnectivityManager
-import android.net.wifi.WifiManager
 import android.content.pm.PackageManager
 import android.content.Context
 import android.content.Intent
@@ -183,10 +181,6 @@ class MainActivity : FlutterActivity() {
 	private fun collectTelemetry(): Map<String, Any?> {
 		val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 		val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-		val wifiInfo = (getSystemService(Context.WIFI_SERVICE) as WifiManager).connectionInfo
-		val wifiSignalPercent = wifiInfo?.rssi?.let { rssi ->
-			(((rssi + 90).coerceIn(0, 60) * 100) / 60)
-		}
 		val memory = ActivityManager.MemoryInfo()
 		activityManager.getMemoryInfo(memory)
 		val storage = StatFs(Environment.getDataDirectory().path)
@@ -213,11 +207,6 @@ class MainActivity : FlutterActivity() {
 			"mobile_data_day_mb" to queryMobileDataUsage(1),
 			"mobile_data_week_mb" to queryMobileDataUsage(7),
 			"mobile_data_limit_mb" to 2048.0,
-			"wifi_ssid" to wifiInfo?.ssid?.removePrefix("\"")?.removeSuffix("\""),
-			"wifi_rssi" to wifiInfo?.rssi?.takeUnless { it == -127 },
-			"wifi_signal_percent" to wifiSignalPercent,
-			"wifi_frequency_mhz" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) wifiInfo?.frequency else null,
-			"wifi_link_speed_mbps" to wifiInfo?.linkSpeed?.takeUnless { it < 0 },
 			"applications" to visibleApplications(),
 			"network_technology" to networkTechnology(telephonyManager),
 			"carrier_name" to telephonyManager.networkOperatorName,

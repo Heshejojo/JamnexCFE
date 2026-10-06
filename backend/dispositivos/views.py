@@ -108,15 +108,11 @@ class DeviceNetworkView(APIView):
         serializer = DeviceNetworkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        operador_id = data.pop('operador', None)
-        operador = Operador.objects.filter(pk=operador_id).first() if operador_id else None
         sim = Sim.objects.filter(dispositivo=request.user).order_by('-updated_at').first()
         record = RegistroRed.objects.create(
             dispositivo=request.user,
             sim=sim,
             tipo_conexion=data['tipo_conexion'],
-            operador=operador,
-            **{key: value for key, value in data.items() if key != 'tipo_conexion'},
         )
         return Response({'id': record.id, 'received_at': timezone.now()}, status=status.HTTP_201_CREATED)
 
@@ -181,18 +177,16 @@ class DeviceConsumptionView(APIView):
         if consumo:
             consumo.sim = sim
             consumo.consumo_datos_movil = data['consumo_datos_movil']
-            consumo.consumo_wifi = 0
             consumo.consumo_total = total
             consumo.fecha = fecha
             consumo.save(update_fields=[
-                'sim', 'consumo_datos_movil', 'consumo_wifi', 'consumo_total', 'fecha',
+                'sim', 'consumo_datos_movil', 'consumo_total', 'fecha',
             ])
         else:
             consumo = Consumo.objects.create(
                 dispositivo=request.user,
                 sim=sim,
                 consumo_datos_movil=data['consumo_datos_movil'],
-                consumo_wifi=0,
                 consumo_total=total,
                 periodo=data['periodo'],
                 fecha=fecha,

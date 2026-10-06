@@ -110,11 +110,6 @@ class DeviceService {
       mobileDataWeekMb: (telemetry['mobile_data_week_mb'] as num?)?.toDouble(),
       mobileDataLimitMb:
           (telemetry['mobile_data_limit_mb'] as num?)?.toDouble(),
-      wifiSsid: telemetry['wifi_ssid']?.toString(),
-      wifiRssi: (telemetry['wifi_rssi'] as num?)?.toInt(),
-      wifiSignalPercent: (telemetry['wifi_signal_percent'] as num?)?.toInt(),
-      wifiFrequency: (telemetry['wifi_frequency_mhz'] as num?)?.toInt(),
-      wifiLinkSpeed: (telemetry['wifi_link_speed_mbps'] as num?)?.toInt(),
       networkTechnology: telemetry['network_technology']?.toString(),
       carrierName: telemetry['carrier_name']?.toString(),
       carrierId: (telemetry['carrier_id'] as num?)?.toInt(),

@@ -50,7 +50,6 @@ class DeviceStatusSerializer(serializers.Serializer):
 
 class DeviceConsumptionSerializer(serializers.Serializer):
     consumo_datos_movil = serializers.FloatField(min_value=0, default=0)
-    consumo_wifi = serializers.FloatField(min_value=0, default=0)
     consumo_total = serializers.FloatField(min_value=0, required=False)
     periodo = serializers.ChoiceField(choices=['diario', 'semanal', 'mensual', 'personalizado'], default='diario')
     fecha = serializers.DateTimeField(required=False)
@@ -59,15 +58,6 @@ class DeviceConsumptionSerializer(serializers.Serializer):
 
 class DeviceNetworkSerializer(serializers.Serializer):
     tipo_conexion = serializers.ChoiceField(choices=['WIFI', 'DATOS_MOVILES', 'SIN_CONEXION'])
-    ssid = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
-    rssi = serializers.IntegerField(required=False, allow_null=True)
-    frecuencia = serializers.IntegerField(min_value=0, required=False, allow_null=True)
-    velocidad = serializers.FloatField(min_value=0, required=False, allow_null=True)
-    tipo_red_movil = serializers.CharField(max_length=80, required=False, allow_blank=True, allow_null=True)
-    ip_local = serializers.IPAddressField(required=False, allow_null=True)
-    ip_publica = serializers.IPAddressField(required=False, allow_null=True)
-    sim = serializers.IntegerField(required=False, allow_null=True)
-    operador = serializers.IntegerField(required=False, allow_null=True)
 
 
 class DeviceSimSerializer(serializers.Serializer):
