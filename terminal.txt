@@ -1,10 +1,43 @@
-python3 --version
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ python3 manage.py migrate consumos
 python3 manage.py showmigrations consumos
+Traceback (most recent call last):
+  File "/home/joseluis/JamnexCFE/backend/manage.py", line 9, in main
+    from django.core.management import execute_from_command_line
+ModuleNotFoundError: No module named 'django'
 
-python3 manage.py migrate consumos
-python3 manage.py showmigrations consumos
+The above exception was the direct cause of the following exception:
 
-source .venv/bin/activate
+Traceback (most recent call last):
+  File "/home/joseluis/JamnexCFE/backend/manage.py", line 18, in <module>
+    main()
+    ~~~~^^
+  File "/home/joseluis/JamnexCFE/backend/manage.py", line 11, in main
+    raise ImportError(
+        "Couldn't import Django. Are you sure it's installed and available on your environment?"
+    ) from exc
+ImportError: Couldn't import Django. Are you sure it's installed and available on your environment?
+Traceback (most recent call last):
+  File "/home/joseluis/JamnexCFE/backend/manage.py", line 9, in main
+    from django.core.management import execute_from_command_line
+ModuleNotFoundError: No module named 'django'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/joseluis/JamnexCFE/backend/manage.py", line 18, in <module>
+    main()
+    ~~~~^^
+  File "/home/joseluis/JamnexCFE/backend/manage.py", line 11, in main
+    raise ImportError(
+        "Couldn't import Django. Are you sure it's installed and available on your environment?"
+    ) from exc
+ImportError: Couldn't import Django. Are you sure it's installed and available on your environment?
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ source .venv/bin/activate
 python manage.py showmigrations consumos
 python manage.py migrate consumos
 python manage.py showmigrations consumos
+bash: .venv/bin/activate: No existe el fichero o el directorio
+bash: python: orden no encontrada
+bash: python: orden no encontrada
+bash: python: orden no encontrada
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ 
