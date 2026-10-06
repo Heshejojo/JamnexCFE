@@ -1,3 +1,10 @@
+python3 --version
+python3 manage.py showmigrations consumos
+
+python3 manage.py migrate consumos
+python3 manage.py showmigrations consumos
+
+source .venv/bin/activate
 python manage.py showmigrations consumos
 python manage.py migrate consumos
 python manage.py showmigrations consumos
