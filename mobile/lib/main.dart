@@ -255,7 +255,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                       title: _snapshot!.fabricante ?? 'Dispositivo',
                       value: _snapshot!.modelo ?? 'Modelo no disponible',
                       subtitle:
-                          '${_snapshot!.versionAndroid ?? 'Android no disponible'} · ${_snapshot!.batteryPercent ?? 0}% batería\nIMEI: ${_snapshot!.imei1 ?? 'No disponible'} · Serie: ${_snapshot!.serial ?? 'No disponible'}',
+                          '${_snapshot!.versionAndroid ?? 'Android no disponible'} · ${_snapshot!.batteryPercent ?? 0}% batería\nIMEI: ${_snapshot!.imei1 ?? 'No disponible'}\nSerie: ${_snapshot!.serial ?? 'No disponible'}',
                       icon: Icons.phone_android_rounded,
                       color: const Color(0xFF2563EB),
                     ),
