@@ -20,9 +20,16 @@ import android.content.pm.ApplicationInfo
 import android.telephony.SubscriptionManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.TimeUnit
 
 class MainActivity : FlutterActivity() {
 	private val channelName = "agente_cfe/sim"
@@ -115,6 +122,37 @@ class MainActivity : FlutterActivity() {
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
+			if (call.method == "scheduleBackgroundSync") {
+				val baseUrl = call.argument<String>("baseUrl")
+				if (baseUrl.isNullOrBlank()) {
+					result.error("invalid_base_url", "La URL de la API está vacía.", null)
+					return@setMethodCallHandler
+				}
+				applicationContext
+					.getSharedPreferences("JamnexBackgroundSync", Context.MODE_PRIVATE)
+					.edit()
+					.putString("base_url", baseUrl.trimEnd('/'))
+					.apply()
+				val request = PeriodicWorkRequestBuilder<JamnexSyncWorker>(
+					2,
+					TimeUnit.HOURS,
+				)
+					.setConstraints(
+						Constraints.Builder()
+							.setRequiredNetworkType(NetworkType.CONNECTED)
+							.build(),
+					)
+					.setInputData(workDataOf("base_url" to baseUrl))
+					.build()
+				WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+					"jamnex_background_sync",
+					ExistingPeriodicWorkPolicy.UPDATE,
+					request,
+				)
+				result.success(null)
+				return@setMethodCallHandler
+			}
+
 			if (call.method == "getTelemetry") {
 				requestRequiredPermissionsIfNeeded()
 				requestUsageAccessIfNeeded()

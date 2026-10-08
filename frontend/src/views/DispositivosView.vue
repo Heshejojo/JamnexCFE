@@ -32,8 +32,8 @@
               <small>{{ item.fabricante || 'Sin info' }} · {{ item.serial || 'Sin número de serie' }}</small>
             </div>
             <div class="row-actions">
-              <span class="status-badge" :class="item.activo ? 'active' : 'inactive'">
-                {{ item.activo ? '● Activo' : '● Inactivo' }}
+              <span class="status-badge" :class="item.en_linea ? 'active' : 'inactive'">
+                {{ item.en_linea ? '● Activo' : '● Inactivo' }}
               </span>
               <button class="detail-btn" @click="selectDetail(item)">Ver detalles</button>
               <button class="revoke-btn" @click="deleteDevice(item)">Eliminar</button>
@@ -57,8 +57,8 @@
               <h3>{{ selectedDevice.modelo || selectedDevice.device_uuid }}</h3>
             </div>
             <div class="header-actions">
-              <span class="live-status" :class="selectedDevice.activo ? 'active' : 'inactive'">
-                {{ selectedDevice.activo ? 'En línea' : 'Fuera de línea' }}
+              <span class="live-status" :class="selectedDevice.en_linea ? 'active' : 'inactive'">
+                {{ selectedDevice.en_linea ? 'En línea' : 'Fuera de línea' }}
               </span>
               <button v-if="selectedDevice" class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedDevice = null">Cerrar</button>
@@ -104,7 +104,7 @@
             <div class="detail-item"><span class="detail-icon">&lt;/&gt;</span><span>SDK</span><strong>{{ selectedDevice.android_sdk || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▥</span><span>Número de serie</span><strong>{{ selectedDevice.serial || 'Restringido / no disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▯</span><span>IMEI 1</span><strong>{{ selectedDevice.imei_1 || 'Restringido / no disponible' }}</strong></div>
-            <div class="detail-item status-detail"><span class="detail-icon">✓</span><span>Estado</span><strong :class="selectedDevice.activo ? 'active-text' : 'inactive-text'">{{ selectedDevice.activo ? 'Activo' : 'Inactivo' }}</strong></div>
+            <div class="detail-item status-detail"><span class="detail-icon">✓</span><span>Estado</span><strong :class="selectedDevice.en_linea ? 'active-text' : 'inactive-text'">{{ selectedDevice.en_linea ? 'Activo' : 'Inactivo' }}</strong></div>
             <div class="detail-item uuid-detail"><span class="detail-icon">◎</span><span>UUID</span><strong class="uuid">{{ selectedDevice.device_uuid || 'No disponible' }}</strong></div>
           </div>
 

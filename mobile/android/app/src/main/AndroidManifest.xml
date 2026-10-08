@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <application
         android:label="Jamnex"
-        android:name="${applicationName}"
+        android:name=".JamnexApplication"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
         <activity

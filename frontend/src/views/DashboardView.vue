@@ -139,9 +139,9 @@ async function loadDashboard() {
       const name = device.modelo || device.device_uuid;
       const last = device.ultimo_contacto ? new Date(device.ultimo_contacto).getTime() : null;
       if (!last) {
-        newAlerts.push({ level: 'warn', text: `${name} nunca ha reportado` });
-      } else if (now - last > 24 * 60 * 60 * 1000) {
-        newAlerts.push({ level: 'danger', text: `${name} lleva más de 24 h sin reportar` });
+        newAlerts.push({ level: 'danger', text: `${name} está inactivo: nunca ha reportado` });
+      } else if (now - last > 18 * 60 * 60 * 1000) {
+        newAlerts.push({ level: 'danger', text: `${name} está inactivo: lleva más de 18 h sin reportar` });
       }
       if (device.battery_percent != null && device.battery_percent <= 20 && device.battery_state !== 'CARGANDO') {
         newAlerts.push({ level: 'warn', text: `${name} con batería baja (${device.battery_percent}%)` });

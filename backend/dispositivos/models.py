@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 
 from trabajadores.models import Trabajador
 
@@ -21,6 +24,14 @@ class Dispositivo(models.Model):
 
     def __str__(self):
         return self.modelo or self.device_uuid or f'Dispositivo {self.pk}'
+
+    @property
+    def esta_activo(self):
+        return bool(
+            self.activo
+            and self.ultimo_contacto
+            and self.ultimo_contacto >= timezone.now() - timedelta(hours=18)
+        )
 
     @property
     def is_authenticated(self):

@@ -1,6 +1,6 @@
 from calendar import monthrange
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from io import BytesIO
 
 from django.db.models import OuterRef, Subquery, Sum
@@ -68,19 +68,25 @@ class DashboardSummaryView(APIView):
         latest_battery = RegistroBateria.objects.filter(
             dispositivo_id=OuterRef('pk')
         ).order_by('-fecha_hora')
-        devices = Dispositivo.objects.annotate(
+        devices = list(Dispositivo.objects.annotate(
             battery_percent=Subquery(latest_battery.values('porcentaje')[:1]),
             battery_state=Subquery(latest_battery.values('estado')[:1]),
-        ).values('id', 'modelo', 'device_uuid', 'activo', 'ultimo_contacto', 'battery_percent', 'battery_state')
+        ).values('id', 'modelo', 'device_uuid', 'activo', 'ultimo_contacto', 'battery_percent', 'battery_state'))
+        for device in devices:
+            device['activo'] = bool(
+                device['activo']
+                and device['ultimo_contacto']
+                and device['ultimo_contacto'] >= timezone.now() - timedelta(hours=18)
+            )
         sims = Sim.objects.select_related('operador').values('id', 'numero_telefonico', 'operador__nombre')
 
         return Response({
             'metrics': {
                 'devices': Dispositivo.objects.count(),
                 'sims': Sim.objects.count(),
-                'connected': Dispositivo.objects.filter(activo=True).count(),
+                'connected': sum(device['activo'] for device in devices),
             },
-            'devices': list(devices),
+            'devices': devices,
             'sims': [
                 {
                     'id': sim['id'],
@@ -201,7 +207,7 @@ class DevicesMonthlyExportView(APIView):
             iccids[device.id] = sim.iccid if sim and sim.iccid else ''
             sheet.append([
                 f'{year}-{month:02d}', device.serial or '', device.modelo or '', device.fabricante or '',
-                'Activo' if device.activo else 'Inactivo',
+                'Activo' if device.esta_activo else 'Inactivo',
                 round(total_por_dispositivo.get(device.id, 0), 2),
                 iccids[device.id], device.imei_1 or '',
             ])

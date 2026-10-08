@@ -1,10 +1,35 @@
+from datetime import timedelta
+
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from consumos.models import Consumo
 from dispositivos.models import Dispositivo
+from dispositivos.serializers import DispositivoSerializer
 from redes.models import RegistroRed
 from redes.serializers import RegistroRedSerializer
+
+
+class DeviceActivityTimeoutTest(TestCase):
+    def test_device_becomes_inactive_after_eighteen_hours_without_contact(self):
+        device = Dispositivo.objects.create(
+            device_uuid='activity-timeout-test',
+            ultimo_contacto=timezone.now() - timedelta(hours=17, minutes=59),
+        )
+        self.assertTrue(device.esta_activo)
+
+        device.ultimo_contacto = timezone.now() - timedelta(hours=18, minutes=1)
+        device.save(update_fields=['ultimo_contacto'])
+
+        self.assertFalse(device.esta_activo)
+        serialized = DispositivoSerializer(device).data
+        self.assertTrue(serialized['activo'])
+        self.assertFalse(serialized['en_linea'])
+
+    def test_device_without_contact_is_inactive(self):
+        device = Dispositivo.objects.create(device_uuid='never-contacted-test')
+        self.assertFalse(device.esta_activo)
 
 
 class DeviceConsumptionMobileOnlyTest(TestCase):

@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'models/device_snapshot.dart';
 import 'services/api_service.dart';
@@ -43,8 +42,9 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
   final DeviceService _deviceService = DeviceService();
   final ApiService _apiService = ApiService();
   final SyncProvider _syncProvider = SyncProvider();
-  Timer? _syncTimer;
+  static const MethodChannel _simChannel = MethodChannel('agente_cfe/sim');
   bool _isLoading = false;
+  bool _backgroundSyncScheduled = false;
   String _status = 'Pendiente';
   String _lastSync = 'Nunca';
   DeviceSnapshot? _snapshot;
@@ -56,31 +56,38 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
     _initialize();
   }
 
-  @override
-  void dispose() {
-    _syncTimer?.cancel();
-    super.dispose();
-  }
-
   Future<void> _initialize() async {
     await Future.wait([
       _apiService.loadDeviceToken(),
       _syncProvider.load(),
     ]);
 
+    try {
+      await _simChannel.invokeMethod<void>(
+        'scheduleBackgroundSync',
+        {'baseUrl': ApiService.baseUrl},
+      );
+      if (mounted) {
+        setState(() {
+          _backgroundSyncScheduled = true;
+        });
+      }
+    } on PlatformException catch (error) {
+      debugPrint(
+          'No se pudo programar la sincronización en segundo plano: $error');
+    }
+
     await _collectAndSend();
-    _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (!mounted) return;
-      await _collectAndSend();
-    });
   }
 
   Future<void> _collectAndSend() async {
     final pendingEvents = <Map<String, dynamic>>[];
-    setState(() {
-      _isLoading = true;
-      _status = 'Sincronizando';
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _status = 'Sincronizando';
+      });
+    }
 
     try {
       final snapshot = await _deviceService.collectDeviceSnapshot();
@@ -170,12 +177,14 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         );
       }
 
-      setState(() {
-        _snapshot = snapshot;
-        _status = 'Sincronizado';
-        _lastSync = DateTime.now().toLocal().toString().substring(0, 16);
-        _message = 'Dispositivo sincronizado correctamente.';
-      });
+      if (mounted) {
+        setState(() {
+          _snapshot = snapshot;
+          _status = 'Sincronizado';
+          _lastSync = DateTime.now().toLocal().toString().substring(0, 16);
+          _message = 'Dispositivo sincronizado correctamente.';
+        });
+      }
     } catch (error) {
       for (final event in pendingEvents) {
         await _syncProvider.enqueue({
@@ -184,14 +193,18 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           'created_at': DateTime.now().toUtc().toIso8601String(),
         });
       }
-      setState(() {
-        _status = 'Error de sincronización';
-        _message = 'Error: $error';
-      });
+      if (mounted) {
+        setState(() {
+          _status = 'Error de sincronización';
+          _message = 'Error: $error';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -289,6 +302,10 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                     Text(_message),
                     const SizedBox(height: 10),
                     Text('Última sincronización: $_lastSync'),
+                    const SizedBox(height: 6),
+                    Text(_backgroundSyncScheduled
+                        ? 'En segundo plano: cada 2 horas; al conectar Wi-Fi se sincroniza si el proceso sigue activo.'
+                        : 'Sincronización en segundo plano no disponible'),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,

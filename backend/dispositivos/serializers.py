@@ -4,12 +4,14 @@ from .models import AsignacionDispositivo, Dispositivo
 
 
 class DispositivoSerializer(serializers.ModelSerializer):
+    en_linea = serializers.BooleanField(source='esta_activo', read_only=True)
+
     class Meta:
         model = Dispositivo
         fields = [
             'id', 'device_uuid', 'fabricante', 'modelo', 'version_android', 'android_sdk',
             'serial', 'imei_1', 'imei_2', 'ram_total', 'almacenamiento_total',
-            'activo', 'ultimo_contacto', 'created_at', 'updated_at'
+            'activo', 'en_linea', 'ultimo_contacto', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 
