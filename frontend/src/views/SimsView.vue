@@ -32,7 +32,8 @@
             <div class="sim-info-block">
               <span class="sim-row-icon">▤</span>
               <strong>{{ sim.numero_telefonico || 'Número no disponible' }}</strong>
-              <small>Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }} · Serie: {{ sim.dispositivo_serial || 'No disponible' }}</small>
+              <small>Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }}</small>
+              <small>Serie: {{ sim.dispositivo_serial || 'No disponible' }}</small>
               <small>{{ sim.operador_nombre || 'N/A' }} · {{ sim.iccid || 'Sin ICCID' }}</small>
             </div>
             <div class="row-actions">
