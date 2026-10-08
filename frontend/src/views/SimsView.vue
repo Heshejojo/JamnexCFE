@@ -32,6 +32,7 @@
             <div class="sim-info-block">
               <span class="sim-row-icon">▤</span>
               <strong>{{ sim.numero_telefonico || 'Número no disponible' }}</strong>
+              <small>Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }} · Serie: {{ sim.dispositivo_serial || 'No disponible' }}</small>
               <small>{{ sim.operador_nombre || 'N/A' }} · {{ sim.iccid || 'Sin ICCID' }}</small>
             </div>
             <div class="row-actions">
@@ -100,8 +101,8 @@
     </div>
     <div class="summary-card amber">
       <span class="summary-icon">◷</span>
-      <span class="metric-kicker">Límite</span>
-      <strong>{{ ((totalUsed(selectedSim) / 2048) * 100).toFixed(1) }}% / 2 GB</strong>
+      <span class="metric-kicker">Consumo mensual / límite</span>
+      <strong>{{ formatDataAmount(monthlyUsed(selectedSim)) }} / 2 GB</strong>
     </div>
     <div class="summary-card violet">
       <span class="summary-icon">◎</span>
@@ -192,28 +193,35 @@ const editForm = reactive({ numero_telefonico: '', iccid: '', pais: '', tecnolog
 
 const filteredSims = computed(() =>
   sims.value.filter((sim) =>
-    `${sim.numero_telefonico || ''} ${sim.operador_nombre || ''} ${sim.iccid || ''} ${sim.sim_uuid || ''}`
+    `${sim.numero_telefonico || ''} ${sim.dispositivo_nombre || ''} ${sim.dispositivo_serial || ''} ${sim.operador_nombre || ''} ${sim.iccid || ''} ${sim.sim_uuid || ''}`
       .toLowerCase()
       .includes(query.value.toLowerCase())
   )
 );
 
+function asList(data) {
+  return Array.isArray(data) ? data : data?.results || [];
+}
+
 async function loadSims() {
   loading.value = true;
   loadError.value = '';
   try {
-    const [simsResponse, consumptionResponse, networksResponse] = await Promise.all([
+    const [simsResponse, consumptionResponse, networksResponse, devicesResponse] = await Promise.all([
       api.get('/sims/'),
       api.get('/consumos/'),
       api.get('/redes/'),
+      api.get('/dispositivos/'),
     ]);
 
-    const simsList = Array.isArray(simsResponse.data) ? simsResponse.data : simsResponse.data?.results || [];
-    const consumption = Array.isArray(consumptionResponse.data) ? consumptionResponse.data : consumptionResponse.data?.results || [];
-    const networks = Array.isArray(networksResponse.data) ? networksResponse.data : networksResponse.data?.results || [];
+    const simsList = asList(simsResponse.data);
+    const consumption = asList(consumptionResponse.data);
+    const networks = asList(networksResponse.data);
+    const devices = asList(devicesResponse.data);
     consumptionRecords.value = consumption;
 
     sims.value = simsList.map((sim) => {
+      const device = devices.find((item) => String(item.id) === String(sim.dispositivo));
       const lastSevenDays = Date.now() - (7 * 24 * 60 * 60 * 1000);
       const simConsumption = consumption.filter((c) => c.sim === sim.id);
       const dailyConsumption = simConsumption.filter((c) =>
@@ -232,6 +240,10 @@ async function loadSims() {
       const consumo_datos_movil_hoy = Number(todayRecord?.consumo_datos_movil || 0);
       return {
         ...sim,
+        dispositivo_nombre: device
+          ? [device.fabricante, device.modelo].filter(Boolean).join(' ') || device.device_uuid
+          : '',
+        dispositivo_serial: device?.serial || '',
         consumo_datos_movil,
         consumo_datos_movil_hoy,
         operador_nombre: sim.operador_nombre || sim.operador?.nombre || (typeof sim.operador === 'string' ? sim.operador : 'N/A'),
@@ -241,9 +253,9 @@ async function loadSims() {
       };
     });
 
-    if (!selectedSim.value && sims.value.length) {
-      selectedSim.value = sims.value[0];
-    }
+    selectedSim.value = selectedSim.value
+      ? sims.value.find((sim) => sim.id === selectedSim.value.id) || null
+      : sims.value[0] || null;
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (error) {
     console.error('Error cargando SIMs:', error);
@@ -256,8 +268,9 @@ async function loadSims() {
   }
 }
 
-function totalUsed(sim) {
-  return Number(sim?.consumo_datos_movil || 0);
+function formatDataAmount(value) {
+  const amount = Number(value || 0);
+  return amount >= 1024 ? `${(amount / 1024).toFixed(2)} GB` : `${amount.toFixed(2)} MB`;
 }
 
 function monthlyUsed(sim) {
