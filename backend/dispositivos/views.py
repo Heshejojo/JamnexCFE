@@ -132,23 +132,27 @@ class DeviceSimView(APIView):
                 nombre=operador_nombre,
                 defaults={'pais': data.get('pais', ''), 'activo': True},
             )
+        sim_defaults = {
+            'dispositivo': request.user,
+            'iccid': data.get('iccid'),
+            'slot': data.get('slot'),
+            'mcc': data.get('mcc', ''),
+            'mnc': data.get('mnc', ''),
+            'operador': operador,
+            'pais': data.get('pais', ''),
+            'carrier_id': data.get('carrier_id'),
+            'esim': data.get('esim', False),
+            'tecnologia': data.get('tecnologia', ''),
+            'roaming': data.get('roaming', False),
+            'activo': True,
+        }
+        numero_telefonico = data.get('numero_telefonico')
+        if numero_telefonico and numero_telefonico.strip():
+            sim_defaults['numero_telefonico'] = numero_telefonico
+
         sim, _ = Sim.objects.update_or_create(
             sim_uuid=data['sim_uuid'],
-            defaults={
-                'dispositivo': request.user,
-                'iccid': data.get('iccid'),
-                'slot': data.get('slot'),
-                'mcc': data.get('mcc', ''),
-                'mnc': data.get('mnc', ''),
-                'numero_telefonico': data.get('numero_telefonico'),
-                'operador': operador,
-                'pais': data.get('pais', ''),
-                'carrier_id': data.get('carrier_id'),
-                'esim': data.get('esim', False),
-                'tecnologia': data.get('tecnologia', ''),
-                'roaming': data.get('roaming', False),
-                'activo': True,
-            },
+            defaults=sim_defaults,
         )
         Consumo.objects.filter(dispositivo=request.user, sim__isnull=True).update(sim=sim)
         return Response({'id': sim.id, 'available': True}, status=status.HTTP_201_CREATED)

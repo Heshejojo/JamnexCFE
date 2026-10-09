@@ -9,6 +9,7 @@ from dispositivos.models import Dispositivo
 from dispositivos.serializers import DispositivoSerializer
 from redes.models import RegistroRed
 from redes.serializers import RegistroRedSerializer
+from sims.models import Sim
 
 
 class DeviceActivityTimeoutTest(TestCase):
@@ -135,3 +136,47 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
         self.assertIsNone(network.velocidad)
         network_data = RegistroRedSerializer(network).data
         self.assertEqual(set(network_data), {'id', 'dispositivo', 'sim', 'tipo_conexion', 'fecha_hora'})
+
+
+class DeviceSimPhoneNumberTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        registration = self.client.post(
+            '/api/device/register/',
+            {'device_uuid': 'sim-phone-number-test'},
+            format='json',
+        )
+        self.assertEqual(registration.status_code, 201)
+        self.headers = {
+            'HTTP_AUTHORIZATION': f"Device {registration.data['token']}",
+        }
+        self.sim_uuid = 'sim-phone-number-test-1'
+        self.phone_number = '+52 555 123 4567'
+
+    def test_empty_device_number_does_not_clear_manually_saved_number(self):
+        first_response = self.client.post(
+            '/api/device/sim/',
+            {
+                'sim_uuid': self.sim_uuid,
+                'numero_telefonico': self.phone_number,
+            },
+            format='json',
+            **self.headers,
+        )
+        self.assertEqual(first_response.status_code, 201)
+        sim = Sim.objects.get(sim_uuid=self.sim_uuid)
+
+        for reported_number in ('', None):
+            with self.subTest(reported_number=reported_number):
+                response = self.client.post(
+                    '/api/device/sim/',
+                    {
+                        'sim_uuid': self.sim_uuid,
+                        'numero_telefonico': reported_number,
+                    },
+                    format='json',
+                    **self.headers,
+                )
+                self.assertEqual(response.status_code, 201)
+                sim.refresh_from_db()
+                self.assertEqual(sim.numero_telefonico, self.phone_number)
