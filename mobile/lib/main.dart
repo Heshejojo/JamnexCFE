@@ -311,13 +311,27 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                     ),
                     const SizedBox(height: 18),
                     const Center(
-                      child: Text(
-                        'Designed by Julio Cesar C Acosta Y Adrian M Mancha',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 10,
-                        ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Designed by Julio Cesar C Acosta & Adrian M Mancha',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '© 2026 Julio Cesar C Acosta & Adrian M Mancha. All rights reserved.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

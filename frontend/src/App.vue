@@ -36,7 +36,10 @@
           </div>
         </div>
         <button class="logout-btn" @click="logoutSession">Cerrar sesión</button>
-        <small class="sidebar-credit">Designed by Julio Cesar C Acosta Y Adrian M Mancha</small>
+        <div class="sidebar-credit">
+          <strong>Designed by Julio Cesar C Acosta &amp; Adrian M Mancha</strong>
+          <span>© 2026 Julio Cesar C Acosta &amp; Adrian M Mancha. All rights reserved.</span>
+        </div>
       </div>
     </aside>
 
@@ -294,11 +297,20 @@ function logoutSession() {
 }
 
 .sidebar-credit {
-  display: block;
+  display: grid;
+  gap: 4px;
   margin-top: 8px;
   color: rgba(255, 255, 255, 0.32);
-  font-size: 0.62rem;
   text-align: center;
+}
+
+.sidebar-credit strong {
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.sidebar-credit span {
+  font-size: 0.6rem;
 }
 
 .main-panel {
