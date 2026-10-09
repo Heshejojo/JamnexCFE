@@ -38,7 +38,7 @@
         <button class="logout-btn" @click="logoutSession">Cerrar sesión</button>
         <div class="sidebar-credit">
           <strong>Developed by Julio Cesar C Acosta & Adrian M Mancha</strong>
-          <span>© 2026 Jamnex &amp; . All rights reserved.</span>
+          <span>© 2026 Jamnex. All rights reserved.</span>
         </div>
       </div>
     </aside>
