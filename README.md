@@ -21,7 +21,7 @@ La base de datos se selecciona mediante `backend/.env`: si existe `DATABASE_URL`
 - Las variables se mantienen en archivos `.env` fuera de Git.
 - El teléfono físico usa `--dart-define=API_BASE_URL=http://192.168.1.74:8000/api`.
 - El agente Android programa sincronización periódica cada 2 horas y una sincronización adicional al conectar Wi-Fi mientras Android mantiene activo el proceso. Android puede retrasar tareas periódicas; una detención forzada pausa la ejecución hasta volver a abrir la app.
-- El panel muestra un dispositivo como inactivo si no reporta durante 18 horas.
+- El panel muestra un dispositivo como inactivo si no reporta durante 72 horas.
 
 ## Arranque local
 

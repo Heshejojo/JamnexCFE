@@ -30,7 +30,7 @@ class Dispositivo(models.Model):
         return bool(
             self.activo
             and self.ultimo_contacto
-            and self.ultimo_contacto >= timezone.now() - timedelta(hours=18)
+            and self.ultimo_contacto >= timezone.now() - timedelta(hours=72)
         )
 
     @property

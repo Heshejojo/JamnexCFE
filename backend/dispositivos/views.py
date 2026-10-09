@@ -15,7 +15,7 @@ from sims.models import Sim
 from operadores.models import Operador
 
 from .models import CredencialDispositivo, Dispositivo
-from .serializers import DeviceConsumptionSerializer, DeviceNetworkSerializer, DeviceRegisterSerializer, DeviceSimSerializer, DeviceStatusSerializer, DispositivoSerializer
+from .serializers import DeviceConsumptionSerializer, DeviceNetworkSerializer, DeviceRegisterSerializer, DeviceSimSerializer, DeviceStatusSerializer, DispositivoEditSerializer, DispositivoSerializer
 from usuarios.permissions import RolePermission
 from auditoria.services import record_action
 
@@ -70,7 +70,7 @@ class DeviceStatusView(APIView):
         device = request.user
         if data.get('activo') is not None:
             device.activo = data['activo']
-        device.ultimo_contacto = data.get('timestamp', timezone.now())
+        device.ultimo_contacto = timezone.now()
         device.save(update_fields=['activo', 'ultimo_contacto', 'updated_at'])
         if data.get('battery_percent') is not None:
             state = (data.get('battery_status') or 'DESCONOCIDO').upper()
@@ -220,6 +220,11 @@ class DispositivoDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Dispositivo.objects.all()
     serializer_class = DispositivoSerializer
     permission_classes = [RolePermission]
+
+    def get_serializer_class(self):
+        if self.request.method in {'PUT', 'PATCH'}:
+            return DispositivoEditSerializer
+        return DispositivoSerializer
 
     def perform_update(self, serializer):
         device = serializer.save()

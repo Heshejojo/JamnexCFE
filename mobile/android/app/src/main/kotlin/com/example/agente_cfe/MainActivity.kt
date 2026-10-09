@@ -274,9 +274,11 @@ class MainActivity : FlutterActivity() {
 				set(java.util.Calendar.MILLISECOND, 0)
 				add(java.util.Calendar.DAY_OF_YEAR, -(days - 1))
 			}
-			val subscriberId = getSystemService(Context.TELEPHONY_SERVICE)
-				.let { it as TelephonyManager }
-				.subscriberId
+			val subscriberId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				null
+			} else {
+				(getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager).subscriberId
+			}
 			val bucket = manager.querySummaryForDevice(
 				ConnectivityManager.TYPE_MOBILE,
 				subscriberId,

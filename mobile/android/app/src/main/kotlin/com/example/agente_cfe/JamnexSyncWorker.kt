@@ -90,10 +90,11 @@ class JamnexSyncWorker(
 			"ram_total" to ramTotalMb,
 			"almacenamiento_total" to storageTotalMb,
 		)
-		var token = applicationContext
+		val storedToken = applicationContext
 			.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
 			.getString("flutter.device_token", null)
-		if (token.isNullOrBlank()) token = registerDevice(baseUrl, devicePayload)
+			?.takeIf { it.isNotBlank() }
+		var token = storedToken ?: registerDevice(baseUrl, devicePayload)
 
 		token = postDevice(
 			baseUrl,
@@ -250,7 +251,11 @@ class JamnexSyncWorker(
 	private fun mobileUsageMb(days: Int): Double? {
 		return try {
 			val telephony = applicationContext.getSystemService(TelephonyManager::class.java)
-			val subscriberId = telephony.subscriberId ?: return null
+			val subscriberId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				null
+			} else {
+				telephony.subscriberId ?: return null
+			}
 			val end = System.currentTimeMillis()
 			val start = Calendar.getInstance().apply {
 				timeInMillis = end

@@ -76,7 +76,7 @@ class DashboardSummaryView(APIView):
             device['activo'] = bool(
                 device['activo']
                 and device['ultimo_contacto']
-                and device['ultimo_contacto'] >= timezone.now() - timedelta(hours=18)
+                and device['ultimo_contacto'] >= timezone.now() - timedelta(hours=72)
             )
         sims = Sim.objects.select_related('operador').values('id', 'numero_telefonico', 'operador__nombre')
 

@@ -124,14 +124,8 @@
           <button type="button" class="modal-close" aria-label="Cerrar" @click="editingDevice = false">×</button>
         </div>
 
-        <label>Fabricante<input v-model="editForm.fabricante" type="text" /></label>
-        <label>Modelo<input v-model="editForm.modelo" type="text" /></label>
-        <label>UUID<input v-model="editForm.device_uuid" type="text" /></label>
-        <label>Versión Android<input v-model="editForm.version_android" type="text" /></label>
-        <label>SDK<input v-model="editForm.android_sdk" type="number" min="0" /></label>
         <label>IMEI 1<input v-model="editForm.imei_1" type="text" /></label>
         <label>Número de serie<input v-model="editForm.serial" type="text" /></label>
-        <label class="edit-check"><input v-model="editForm.activo" type="checkbox" /> Dispositivo activo</label>
 
         <div class="modal-actions">
           <button type="button" class="secondary-btn" @click="editingDevice = false">Cancelar</button>
@@ -158,14 +152,8 @@ const lastSync = ref('nunca');
 const editingDevice = ref(false);
 const savingDeviceEdit = ref(false);
 const editForm = reactive({
-  device_uuid: '',
-  fabricante: '',
-  modelo: '',
-  version_android: '',
-  android_sdk: '',
   serial: '',
   imei_1: '',
-  activo: true,
 });
 const filteredItems = computed(() => 
   items.value.filter((item) => 
@@ -317,14 +305,8 @@ function startEdit() {
   if (!selectedDevice.value) return;
 
   Object.assign(editForm, {
-    device_uuid: selectedDevice.value.device_uuid || '',
-    fabricante: selectedDevice.value.fabricante || '',
-    modelo: selectedDevice.value.modelo || '',
-    version_android: selectedDevice.value.version_android || '',
-    android_sdk: selectedDevice.value.android_sdk ?? '',
     serial: selectedDevice.value.serial || '',
     imei_1: selectedDevice.value.imei_1 || '',
-    activo: Boolean(selectedDevice.value.activo),
   });
 
   editingDevice.value = true;
@@ -335,12 +317,10 @@ async function saveEdit() {
 
   savingDeviceEdit.value = true;
   try {
-    const payload = {
-      ...editForm,
-      android_sdk: editForm.android_sdk === '' || editForm.android_sdk === null ? null : Number(editForm.android_sdk),
-    };
-
-    await api.put(`/dispositivos/${selectedDevice.value.id}/`, payload);
+    await api.patch(`/dispositivos/${selectedDevice.value.id}/`, {
+      serial: editForm.serial,
+      imei_1: editForm.imei_1,
+    });
     editingDevice.value = false;
     await loadData();
 

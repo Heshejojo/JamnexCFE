@@ -36,6 +36,7 @@
           </div>
         </div>
         <button class="logout-btn" @click="logoutSession">Cerrar sesión</button>
+        <small class="sidebar-credit">Designed by OR AMM y JCCA ORFA</small>
       </div>
     </aside>
 
@@ -290,6 +291,14 @@ function logoutSession() {
 .logout-btn:hover {
   filter: brightness(1.04);
   box-shadow: 0 12px 22px rgba(30, 155, 72, 0.28);
+}
+
+.sidebar-credit {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.32);
+  font-size: 0.62rem;
+  text-align: center;
 }
 
 .main-panel {

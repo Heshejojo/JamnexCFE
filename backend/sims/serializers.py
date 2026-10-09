@@ -22,6 +22,12 @@ class SimSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
 
+class SimEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sim
+        fields = ['iccid', 'numero_telefonico']
+
+
 class AsignacionSimSerializer(serializers.ModelSerializer):
     class Meta:
         model = AsignacionSim

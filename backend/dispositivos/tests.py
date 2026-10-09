@@ -12,14 +12,14 @@ from redes.serializers import RegistroRedSerializer
 
 
 class DeviceActivityTimeoutTest(TestCase):
-    def test_device_becomes_inactive_after_eighteen_hours_without_contact(self):
+    def test_device_becomes_inactive_after_seventy_two_hours_without_contact(self):
         device = Dispositivo.objects.create(
             device_uuid='activity-timeout-test',
-            ultimo_contacto=timezone.now() - timedelta(hours=17, minutes=59),
+            ultimo_contacto=timezone.now() - timedelta(hours=71, minutes=59),
         )
         self.assertTrue(device.esta_activo)
 
-        device.ultimo_contacto = timezone.now() - timedelta(hours=18, minutes=1)
+        device.ultimo_contacto = timezone.now() - timedelta(hours=72, minutes=1)
         device.save(update_fields=['ultimo_contacto'])
 
         self.assertFalse(device.esta_activo)
@@ -30,6 +30,36 @@ class DeviceActivityTimeoutTest(TestCase):
     def test_device_without_contact_is_inactive(self):
         device = Dispositivo.objects.create(device_uuid='never-contacted-test')
         self.assertFalse(device.esta_activo)
+
+    def test_status_uses_server_time_for_last_contact(self):
+        client = APIClient()
+        registration = client.post(
+            '/api/device/register/',
+            {'device_uuid': 'status-contact-time-test'},
+            format='json',
+        )
+        self.assertEqual(registration.status_code, 201)
+        device = Dispositivo.objects.get(pk=registration.data['device_id'])
+        headers = {
+            'HTTP_AUTHORIZATION': f"Device {registration.data['token']}",
+        }
+        stale_timestamp = (timezone.now() - timedelta(days=5)).isoformat()
+        before_request = timezone.now()
+
+        response = client.post(
+            '/api/device/status/',
+            {
+                'device_uuid': device.device_uuid,
+                'timestamp': stale_timestamp,
+            },
+            format='json',
+            **headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        device.refresh_from_db()
+        self.assertGreaterEqual(device.ultimo_contacto, before_request)
+        self.assertTrue(device.esta_activo)
 
 
 class DeviceConsumptionMobileOnlyTest(TestCase):

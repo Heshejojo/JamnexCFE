@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions
 
 from .models import AsignacionSim, Sim
-from .serializers import AsignacionSimSerializer, SimSerializer
+from .serializers import AsignacionSimSerializer, SimEditSerializer, SimSerializer
 from usuarios.permissions import RolePermission
 
 
@@ -15,6 +15,11 @@ class SimDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Sim.objects.select_related('operador').all()
     serializer_class = SimSerializer
     permission_classes = [RolePermission]
+
+    def get_serializer_class(self):
+        if self.request.method in {'PUT', 'PATCH'}:
+            return SimEditSerializer
+        return SimSerializer
 
 
 class AsignacionSimListCreateAPIView(generics.ListCreateAPIView):

@@ -16,6 +16,12 @@ class DispositivoSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
 
+class DispositivoEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dispositivo
+        fields = ['serial', 'imei_1']
+
+
 class DeviceRegisterSerializer(serializers.Serializer):
     device_uuid = serializers.CharField(max_length=255)
     fabricante = serializers.CharField(max_length=120, allow_blank=True, required=False)

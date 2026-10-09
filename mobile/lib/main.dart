@@ -44,11 +44,9 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
   final SyncProvider _syncProvider = SyncProvider();
   static const MethodChannel _simChannel = MethodChannel('agente_cfe/sim');
   bool _isLoading = false;
-  bool _backgroundSyncScheduled = false;
   String _status = 'Pendiente';
   String _lastSync = 'Nunca';
   DeviceSnapshot? _snapshot;
-  String _message = 'Listo para sincronizar el dispositivo con Jamnex.';
 
   @override
   void initState() {
@@ -67,11 +65,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         'scheduleBackgroundSync',
         {'baseUrl': ApiService.baseUrl},
       );
-      if (mounted) {
-        setState(() {
-          _backgroundSyncScheduled = true;
-        });
-      }
     } on PlatformException catch (error) {
       debugPrint(
           'No se pudo programar la sincronización en segundo plano: $error');
@@ -182,7 +175,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           _snapshot = snapshot;
           _status = 'Sincronizado';
           _lastSync = DateTime.now().toLocal().toString().substring(0, 16);
-          _message = 'Dispositivo sincronizado correctamente.';
         });
       }
     } catch (error) {
@@ -196,7 +188,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
       if (mounted) {
         setState(() {
           _status = 'Error de sincronización';
-          _message = 'Error: $error';
         });
       }
     } finally {
@@ -299,13 +290,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                           TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 10),
-                    Text(_message),
-                    const SizedBox(height: 10),
                     Text('Última sincronización: $_lastSync'),
-                    const SizedBox(height: 6),
-                    Text(_backgroundSyncScheduled
-                        ? 'En segundo plano: cada 2 horas; al conectar Wi-Fi se sincroniza si el proceso sigue activo.'
-                        : 'Sincronización en segundo plano no disponible'),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -321,7 +306,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                             : const Icon(Icons.sync_rounded),
                         label: Text(_isLoading
                             ? 'Sincronizando...'
-                            : 'Sincronizar dispositivo'),
+                            : 'Sincronizar ahora'),
                       ),
                     ),
                   ],
@@ -339,6 +324,18 @@ class _MobileDataHero extends StatelessWidget {
   final DeviceSnapshot? snapshot;
 
   const _MobileDataHero({required this.snapshot});
+
+  String _formatMb(num? megabytes) {
+    if (megabytes == null) return 'No disponible';
+    return '${megabytes.toStringAsFixed(2)} MB';
+  }
+
+  String _formatDataUsage(num? megabytes) {
+    if (megabytes == null) return 'No disponible';
+    return megabytes >= 1024
+        ? '${(megabytes / 1024).toStringAsFixed(2)} GB'
+        : '${megabytes.toStringAsFixed(2)} MB';
+  }
 
   String _formatGb(num? megabytes) {
     if (megabytes == null) return 'No disponible';
@@ -373,7 +370,7 @@ class _MobileDataHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Text(_formatGb(used),
+          Text(_formatMb(used),
               style: const TextStyle(
                   color: Colors.white,
                   fontSize: 36,
@@ -404,7 +401,8 @@ class _MobileDataHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Text('Últimos 7 días: ${_formatGb(snapshot?.mobileDataWeekMb)}',
+          Text(
+              'Últimos 7 días: ${_formatDataUsage(snapshot?.mobileDataWeekMb)}',
               style: const TextStyle(color: Color(0xFFCCFBF1))),
         ],
       ),
@@ -416,6 +414,18 @@ class _MonitoringPanel extends StatelessWidget {
   final DeviceSnapshot? snapshot;
 
   const _MonitoringPanel({required this.snapshot});
+
+  String _formatMb(num? megabytes) {
+    if (megabytes == null) return 'No disponible';
+    return '${megabytes.toStringAsFixed(2)} MB';
+  }
+
+  String _formatDataUsage(num? megabytes) {
+    if (megabytes == null) return 'No disponible';
+    return megabytes >= 1024
+        ? '${(megabytes / 1024).toStringAsFixed(2)} GB'
+        : '${megabytes.toStringAsFixed(2)} MB';
+  }
 
   String _formatGb(num? megabytes) {
     if (megabytes == null) return 'No disponible';
@@ -496,9 +506,10 @@ class _MonitoringPanel extends StatelessWidget {
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             children: usingMobile
                 ? [
-                    _detail('Consumo hoy', _formatGb(current?.mobileDataDayMb)),
-                    _detail(
-                        'Últimos 7 días', _formatGb(current?.mobileDataWeekMb)),
+                    _detail('Consumo hoy',
+                        _formatMb(current?.mobileDataDayMb)),
+                    _detail('Últimos 7 días',
+                        _formatDataUsage(current?.mobileDataWeekMb)),
                     _detail('Límite', _formatGb(current?.mobileDataLimitMb)),
                     _detail('Tecnología',
                         current?.networkTechnology ?? 'No disponible'),

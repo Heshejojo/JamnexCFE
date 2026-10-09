@@ -142,9 +142,6 @@
         </div>
         <label>Número de teléfono<input v-model="editForm.numero_telefonico" type="text" /></label>
         <label>ICCID<input v-model="editForm.iccid" type="text" /></label>
-        <label>País<input v-model="editForm.pais" type="text" /></label>
-        <label>Tecnología<input v-model="editForm.tecnologia" type="text" /></label>
-        <label class="edit-check"><input v-model="editForm.activo" type="checkbox" /> SIM activa</label>
         <div class="modal-actions">
           <button type="button" class="secondary-btn" @click="editingSim = false">Cancelar</button>
           <button type="submit" class="primary-btn" :disabled="savingEdit">{{ savingEdit ? 'Guardando...' : 'Guardar cambios' }}</button>
@@ -190,7 +187,7 @@ const monthLabel = computed(() => {
 });
 const editingSim = ref(false);
 const savingEdit = ref(false);
-const editForm = reactive({ numero_telefonico: '', iccid: '', pais: '', tecnologia: '', activo: true });
+const editForm = reactive({ numero_telefonico: '', iccid: '' });
 
 const filteredSims = computed(() =>
   sims.value.filter((sim) =>
@@ -332,9 +329,6 @@ function startEdit() {
   Object.assign(editForm, {
     numero_telefonico: selectedSim.value.numero_telefonico || '',
     iccid: selectedSim.value.iccid || '',
-    pais: selectedSim.value.pais || '',
-    tecnologia: selectedSim.value.tecnologia || '',
-    activo: selectedSim.value.activo !== false,
   });
   editingSim.value = true;
 }
@@ -343,7 +337,10 @@ async function saveEdit() {
   if (!selectedSim.value) return;
   savingEdit.value = true;
   try {
-    await api.put(`/sims/${selectedSim.value.id}/`, editForm);
+    await api.patch(`/sims/${selectedSim.value.id}/`, {
+      numero_telefonico: editForm.numero_telefonico,
+      iccid: editForm.iccid,
+    });
     const selectedId = selectedSim.value.id;
     editingSim.value = false;
     await loadSims();
