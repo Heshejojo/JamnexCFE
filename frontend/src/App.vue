@@ -298,19 +298,23 @@ function logoutSession() {
 
 .sidebar-credit {
   display: grid;
-  gap: 4px;
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.32);
+  gap: 5px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.4;
   text-align: center;
 }
 
 .sidebar-credit strong {
-  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
   font-weight: 600;
 }
 
 .sidebar-credit span {
-  font-size: 0.6rem;
+  font-size: 0.66rem;
 }
 
 .main-panel {
