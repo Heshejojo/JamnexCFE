@@ -63,6 +63,38 @@ class DeviceActivityTimeoutTest(TestCase):
         self.assertTrue(device.esta_activo)
 
 
+class DeviceRegisterManualFieldsTest(TestCase):
+    def test_device_registration_does_not_overwrite_edited_serial_or_imei(self):
+        client = APIClient()
+        response = client.post(
+            '/api/device/register/',
+            {
+                'device_uuid': 'manual-device-fields-test',
+                'serial': 'SERIAL-MANUAL',
+                'imei_1': 'IMEI-MANUAL',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 201)
+        device = Dispositivo.objects.get(device_uuid='manual-device-fields-test')
+
+        response = client.post(
+            '/api/device/register/',
+            {
+                'device_uuid': device.device_uuid,
+                'serial': 'SERIAL-REPORTED',
+                'imei_1': 'IMEI-REPORTED',
+                'modelo': 'Updated model',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 201)
+        device.refresh_from_db()
+        self.assertEqual(device.serial, 'SERIAL-MANUAL')
+        self.assertEqual(device.imei_1, 'IMEI-MANUAL')
+        self.assertEqual(device.modelo, 'Updated model')
+
+
 class DeviceConsumptionMobileOnlyTest(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -152,12 +184,14 @@ class DeviceSimPhoneNumberTest(TestCase):
         }
         self.sim_uuid = 'sim-phone-number-test-1'
         self.phone_number = '+52 555 123 4567'
+        self.iccid = 'ICCID-MANUAL-123'
 
     def test_empty_device_number_does_not_clear_manually_saved_number(self):
         first_response = self.client.post(
             '/api/device/sim/',
             {
                 'sim_uuid': self.sim_uuid,
+                'iccid': self.iccid,
                 'numero_telefonico': self.phone_number,
             },
             format='json',
@@ -172,6 +206,7 @@ class DeviceSimPhoneNumberTest(TestCase):
                     '/api/device/sim/',
                     {
                         'sim_uuid': self.sim_uuid,
+                        'iccid': '',
                         'numero_telefonico': reported_number,
                     },
                     format='json',
@@ -180,3 +215,32 @@ class DeviceSimPhoneNumberTest(TestCase):
                 self.assertEqual(response.status_code, 201)
                 sim.refresh_from_db()
                 self.assertEqual(sim.numero_telefonico, self.phone_number)
+                self.assertEqual(sim.iccid, self.iccid)
+
+    def test_device_values_do_not_overwrite_manually_edited_sim_fields(self):
+        response = self.client.post(
+            '/api/device/sim/',
+            {
+                'sim_uuid': self.sim_uuid,
+                'iccid': self.iccid,
+                'numero_telefonico': self.phone_number,
+            },
+            format='json',
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+
+        response = self.client.post(
+            '/api/device/sim/',
+            {
+                'sim_uuid': self.sim_uuid,
+                'iccid': 'ICCID-REPORTED-BY-DEVICE',
+                'numero_telefonico': '+52 555 000 0000',
+            },
+            format='json',
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        sim = Sim.objects.get(sim_uuid=self.sim_uuid)
+        self.assertEqual(sim.iccid, self.iccid)
+        self.assertEqual(sim.numero_telefonico, self.phone_number)

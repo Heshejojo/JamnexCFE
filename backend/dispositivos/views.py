@@ -48,9 +48,23 @@ class DeviceRegisterView(APIView):
         serializer = DeviceRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        device, _ = Dispositivo.objects.update_or_create(
-            device_uuid=data['device_uuid'], defaults={key: value for key, value in data.items() if key != 'device_uuid'}
+        device_defaults = {
+            key: value
+            for key, value in data.items()
+            if key not in {'device_uuid', 'serial', 'imei_1'}
+        }
+        device, created = Dispositivo.objects.get_or_create(
+            device_uuid=data['device_uuid'],
+            defaults={
+                **device_defaults,
+                'serial': data.get('serial'),
+                'imei_1': data.get('imei_1'),
+            },
         )
+        if not created:
+            for field, value in device_defaults.items():
+                setattr(device, field, value)
+            device.save(update_fields=[*device_defaults, 'updated_at'])
         raw_token = secrets.token_urlsafe(32)
         CredencialDispositivo.objects.update_or_create(
             dispositivo=device,
@@ -134,7 +148,6 @@ class DeviceSimView(APIView):
             )
         sim_defaults = {
             'dispositivo': request.user,
-            'iccid': data.get('iccid'),
             'slot': data.get('slot'),
             'mcc': data.get('mcc', ''),
             'mnc': data.get('mnc', ''),
@@ -146,14 +159,18 @@ class DeviceSimView(APIView):
             'roaming': data.get('roaming', False),
             'activo': True,
         }
-        numero_telefonico = data.get('numero_telefonico')
-        if numero_telefonico and numero_telefonico.strip():
-            sim_defaults['numero_telefonico'] = numero_telefonico
-
-        sim, _ = Sim.objects.update_or_create(
+        sim, created = Sim.objects.get_or_create(
             sim_uuid=data['sim_uuid'],
-            defaults=sim_defaults,
+            defaults={
+                **sim_defaults,
+                'iccid': data.get('iccid'),
+                'numero_telefonico': data.get('numero_telefonico'),
+            },
         )
+        if not created:
+            for field, value in sim_defaults.items():
+                setattr(sim, field, value)
+            sim.save(update_fields=[*sim_defaults, 'updated_at'])
         Consumo.objects.filter(dispositivo=request.user, sim__isnull=True).update(sim=sim)
         return Response({'id': sim.id, 'available': True}, status=status.HTTP_201_CREATED)
 
