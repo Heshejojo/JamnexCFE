@@ -309,6 +309,17 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                             : 'Sincronizar ahora'),
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    const Center(
+                      child: Text(
+                        'Designed by A Julio Cesar C Acosta Y Adrian M Mancha',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
