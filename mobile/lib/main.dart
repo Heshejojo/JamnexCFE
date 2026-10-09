@@ -314,7 +314,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                       child: Column(
                         children: [
                           Text(
-                            'Designed by Julio Cesar C Acosta & Adrian M Mancha',
+                            'Developed by Julio Cesar C Acosta & Adrian M Mancha',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color(0xFF64748B),
@@ -324,7 +324,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            '© 2026 Julio Cesar C Acosta & Adrian M Mancha. All rights reserved.',
+                            '© 2026 Jamnex. All rights reserved.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color(0xFF94A3B8),
