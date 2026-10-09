@@ -36,7 +36,7 @@
           </div>
         </div>
         <button class="logout-btn" @click="logoutSession">Cerrar sesión</button>
-        <small class="sidebar-credit">Designed by OR AMM y JCCA ORFA</small>
+        <small class="sidebar-credit">Designed by A Julio Cesar C Acosta Y Adrian M Mancha</small>
       </div>
     </aside>
 
