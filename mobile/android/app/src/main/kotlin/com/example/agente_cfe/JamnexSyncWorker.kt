@@ -124,7 +124,8 @@ class JamnexSyncWorker(
 			devicePayload,
 		)
 
-		val subscriptions = activeSubscriptions()
+		val subscriptionRead = activeSubscriptions()
+		val subscriptions = subscriptionRead.orEmpty()
 		subscriptions.forEach { subscription ->
 			token = postDevice(
 				baseUrl,
@@ -143,6 +144,15 @@ class JamnexSyncWorker(
 					"tecnologia" to networkTechnology(telephony),
 					"roaming" to runCatching { telephony.isNetworkRoaming }.getOrDefault(false),
 				),
+				token,
+				devicePayload,
+			)
+		}
+		if (subscriptionRead != null) {
+			token = postDevice(
+				baseUrl,
+				"/device/sims/status/",
+				json("sim_count" to subscriptions.size),
 				token,
 				devicePayload,
 			)
@@ -251,11 +261,12 @@ class JamnexSyncWorker(
 		}
 	}
 
-	private fun activeSubscriptions(): List<SubscriptionInfo> = try {
-		applicationContext.getSystemService(SubscriptionManager::class.java)
-			?.activeSubscriptionInfoList.orEmpty()
+	private fun activeSubscriptions(): List<SubscriptionInfo>? = try {
+		val manager = applicationContext.getSystemService(SubscriptionManager::class.java)
+			?: return null
+		manager.activeSubscriptionInfoList.orEmpty()
 	} catch (_: SecurityException) {
-		emptyList()
+		null
 	}
 
 	private fun defaultDataSimSlot(subscriptions: List<SubscriptionInfo>): Int? = try {

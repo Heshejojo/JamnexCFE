@@ -135,6 +135,12 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           },
         });
       }
+      if (snapshot.simsReadable == true) {
+        pendingEvents.add({
+          'endpoint': '/device/sims/status/',
+          'payload': {'sim_count': snapshot.sims.length},
+        });
+      }
       if (snapshot.mobileDataMb != null ||
           snapshot.mobileDataDayMb != null ||
           snapshot.mobileDataWeekMb != null) {

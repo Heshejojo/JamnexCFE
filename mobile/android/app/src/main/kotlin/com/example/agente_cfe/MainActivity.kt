@@ -178,13 +178,16 @@ class MainActivity : FlutterActivity() {
 			}
 			if (missingPermissions.isNotEmpty()) {
 				ActivityCompat.requestPermissions(this, missingPermissions, permissionRequestCode)
-				result.success(emptyList<Map<String, Any?>>())
+				result.success(mapOf(
+					"readable" to false,
+					"sims" to emptyList<Map<String, Any?>>(),
+				))
 				return@setMethodCallHandler
 			}
 
 			try {
 				val subscriptions = getSystemService(SubscriptionManager::class.java)?.activeSubscriptionInfoList.orEmpty()
-				result.success(subscriptions.map { subscription ->
+				result.success(mapOf("readable" to true, "sims" to subscriptions.map { subscription ->
 					mapOf(
 						"subscription_id" to subscription.subscriptionId,
 						"slot" to subscription.simSlotIndex,
@@ -198,9 +201,12 @@ class MainActivity : FlutterActivity() {
 						"esim" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) subscription.isEmbedded else false,
 						"activa" to true,
 					)
-				})
+				}))
 			} catch (_: SecurityException) {
-				result.success(emptyList<Map<String, Any?>>())
+				result.success(mapOf(
+					"readable" to false,
+					"sims" to emptyList<Map<String, Any?>>(),
+				))
 			}
 		}
 	}

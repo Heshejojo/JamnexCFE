@@ -11,9 +11,12 @@ class DispositivoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'device_uuid', 'fabricante', 'modelo', 'version_android', 'android_sdk',
             'serial', 'imei_1', 'imei_2', 'ram_total', 'almacenamiento_total',
-            'activo', 'en_linea', 'ultimo_contacto', 'created_at', 'updated_at'
+            'activo', 'en_linea', 'ultimo_contacto', 'sim_count_reported',
+            'sims_reported_at', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = [
+            'sim_count_reported', 'sims_reported_at', 'created_at', 'updated_at',
+        ]
 
 
 class DispositivoEditSerializer(serializers.ModelSerializer):
@@ -82,6 +85,10 @@ class DeviceSimSerializer(serializers.Serializer):
     esim = serializers.BooleanField(required=False)
     tecnologia = serializers.CharField(max_length=30, required=False, allow_blank=True, allow_null=True)
     roaming = serializers.BooleanField(required=False)
+
+
+class DeviceSimStatusSerializer(serializers.Serializer):
+    sim_count = serializers.IntegerField(min_value=0, max_value=10)
 
 
 class AsignacionDispositivoSerializer(serializers.ModelSerializer):

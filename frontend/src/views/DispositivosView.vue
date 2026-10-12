@@ -85,8 +85,8 @@
             class="sim-report-alert unavailable"
             role="status"
           >
-            <strong>No se pudo verificar la información de SIM</strong>
-            <span>Actualiza la página o revisa la conexión con el servidor.</span>
+            <strong>Este móvil aún no ha reportado sus SIM</strong>
+            <span>La app debe sincronizarse para confirmar si tiene una SIM instalada.</span>
           </div>
           <div v-else-if="selectedDevice.simCount === 2" class="sim-report-ok" role="status">
             <strong>Atencion se recibieron datos de dos SIMs</strong>
@@ -265,8 +265,8 @@ function getNetworkText(deviceId) {
 }
 
 function getSimReportText(count) {
-  if (count === null) return 'SIM: no verificada';
-  if (count === 0) return 'Sin datos de SIM';
+  if (count === null) return 'SIM: sin reporte';
+  if (count === 0) return 'Sin SIM detectada';
   if (count === 2) return '2 SIM reportadas';
   return `${count} SIM reportadas`;
 }
@@ -322,24 +322,15 @@ async function loadData() {
   loading.value = true;
   loadError.value = '';
   try {
-    const [devicesResponse, simsResponse] = await Promise.all([
-      api.get('/dispositivos/'),
-      api.get('/sims/').catch((error) => {
-        console.error('No fue posible verificar los datos de SIM:', error);
-        return null;
-      }),
-    ]);
+    const devicesResponse = await api.get('/dispositivos/');
     const devices = Array.isArray(devicesResponse.data)
       ? devicesResponse.data
       : devicesResponse.data?.results || [];
-    const sims = simsResponse
-      ? (Array.isArray(simsResponse.data) ? simsResponse.data : simsResponse.data?.results || [])
-      : null;
     items.value = devices.map((device) => ({
       ...device,
-      simCount: sims === null
-        ? null
-        : sims.filter((sim) => Number(sim.dispositivo) === Number(device.id)).length,
+      simCount: Number.isInteger(device.sim_count_reported)
+        ? device.sim_count_reported
+        : null,
     }));
     if (selectedDevice.value) {
       selectedDevice.value = items.value.find((item) => item.id === selectedDevice.value.id) || null;

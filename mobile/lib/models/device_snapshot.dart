@@ -26,6 +26,7 @@ class DeviceSnapshot {
   final String? carrierName;
   final int? carrierId;
   final bool roaming;
+  final bool? simsReadable;
   final List<Map<String, dynamic>> applications;
   final List<Map<String, dynamic>> sims;
   final bool connected;
@@ -59,6 +60,7 @@ class DeviceSnapshot {
     this.carrierName,
     this.carrierId,
     this.roaming = false,
+    this.simsReadable,
     this.applications = const [],
     this.sims = const [],
     required this.connected,

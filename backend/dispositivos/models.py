@@ -19,6 +19,8 @@ class Dispositivo(models.Model):
     almacenamiento_total = models.BigIntegerField(null=True, blank=True)
     activo = models.BooleanField(default=True)
     ultimo_contacto = models.DateTimeField(null=True, blank=True)
+    sim_count_reported = models.PositiveSmallIntegerField(null=True, blank=True)
+    sims_reported_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -34,6 +34,7 @@ class DeviceService {
     String? deviceId;
     String? serial;
     List<Map<String, dynamic>> sims = const [];
+    bool? simsReadable;
     Map<String, dynamic> telemetry = const {};
 
     try {
@@ -47,14 +48,19 @@ class DeviceService {
         ramTotalMb = _bytesToMb(info.physicalRamSize);
         storageTotalMb = _bytesToMb(info.totalDiskSize);
         try {
-          final nativeSims =
-              await _simChannel.invokeMethod<List<dynamic>>('getSimInfo');
-          sims = nativeSims
-                  ?.map((item) => Map<String, dynamic>.from(item as Map))
-                  .toList() ??
-              const [];
+          final simInfo =
+              await _simChannel.invokeMethod<Map<dynamic, dynamic>>('getSimInfo');
+          if (simInfo != null && simInfo['readable'] == true) {
+            simsReadable = true;
+            sims = (simInfo['sims'] as List<dynamic>? ?? const [])
+                .map((item) => Map<String, dynamic>.from(item as Map))
+                .toList();
+          } else {
+            simsReadable = false;
+          }
         } catch (_) {
           sims = const [];
+          simsReadable = false;
         }
         try {
           telemetry = Map<String, dynamic>.from(
@@ -115,6 +121,7 @@ class DeviceService {
       carrierName: telemetry['carrier_name']?.toString(),
       carrierId: (telemetry['carrier_id'] as num?)?.toInt(),
       roaming: telemetry['roaming'] == true,
+      simsReadable: simsReadable,
       applications: (telemetry['applications'] as List<dynamic>?)
               ?.map((item) => Map<String, dynamic>.from(item as Map))
               .toList() ??

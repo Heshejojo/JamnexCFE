@@ -17,7 +17,7 @@ from sims.models import Sim, SimTransferConflict, normalize_iccid
 from operadores.models import Operador
 
 from .models import CredencialDispositivo, Dispositivo
-from .serializers import DeviceConsumptionSerializer, DeviceNetworkSerializer, DeviceRegisterSerializer, DeviceSimSerializer, DeviceStatusSerializer, DispositivoEditSerializer, DispositivoSerializer
+from .serializers import DeviceConsumptionSerializer, DeviceNetworkSerializer, DeviceRegisterSerializer, DeviceSimSerializer, DeviceSimStatusSerializer, DeviceStatusSerializer, DispositivoEditSerializer, DispositivoSerializer
 from usuarios.permissions import RolePermission
 from auditoria.services import record_action
 
@@ -242,6 +242,23 @@ class DeviceSimView(APIView):
                 'transferred': transferred,
             }
         return Response(response_data, status=status.HTTP_200_OK if transferred else status.HTTP_201_CREATED)
+
+
+class DeviceSimStatusView(APIView):
+    authentication_classes = [DeviceAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DeviceSimStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reported_at = timezone.now()
+        request.user.sim_count_reported = serializer.validated_data['sim_count']
+        request.user.sims_reported_at = reported_at
+        request.user.save(update_fields=['sim_count_reported', 'sims_reported_at', 'updated_at'])
+        return Response({
+            'sim_count': request.user.sim_count_reported,
+            'reported_at': reported_at,
+        })
 
 
 class DeviceConsumptionView(APIView):

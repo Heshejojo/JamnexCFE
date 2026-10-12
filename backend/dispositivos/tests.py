@@ -260,6 +260,60 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
         self.assertEqual(set(network_data), {'id', 'dispositivo', 'sim', 'tipo_conexion', 'fecha_hora'})
 
 
+class DeviceSimStatusTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        registration = self.client.post(
+            '/api/device/register/',
+            {'device_uuid': 'sim-status-report-test'},
+            format='json',
+        )
+        self.device = Dispositivo.objects.get(pk=registration.data['device_id'])
+        self.device_headers = {
+            'HTTP_AUTHORIZATION': f"Device {registration.data['token']}",
+        }
+
+    def test_empty_sim_report_is_stored_and_exposed_to_frontend(self):
+        response = self.client.post(
+            '/api/device/sims/status/',
+            {'sim_count': 0},
+            format='json',
+            **self.device_headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.sim_count_reported, 0)
+        self.assertIsNotNone(self.device.sims_reported_at)
+
+        admin = get_user_model().objects.create_superuser(
+            username='sim-status-admin',
+            email='sim-status-admin@example.com',
+            password='test-password',
+        )
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+        devices_response = admin_client.get('/api/dispositivos/')
+        device_data = next(
+            item for item in devices_response.data
+            if item['id'] == self.device.id
+        )
+        self.assertEqual(device_data['sim_count_reported'], 0)
+        self.assertIsNotNone(device_data['sims_reported_at'])
+
+    def test_invalid_sim_count_is_not_accepted_as_empty(self):
+        response = self.client.post(
+            '/api/device/sims/status/',
+            {'sim_count': -1},
+            format='json',
+            **self.device_headers,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.device.refresh_from_db()
+        self.assertIsNone(self.device.sim_count_reported)
+
+
 class DeviceSimPhoneNumberTest(TestCase):
     def setUp(self):
         self.client = APIClient()
