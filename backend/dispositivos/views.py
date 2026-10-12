@@ -235,6 +235,11 @@ class DeviceSimView(APIView):
                     resolved_at=resolved_at,
                 )
 
+            active_sims = Sim.objects.filter(dispositivo=request.user, activo=True).count()
+            if request.user.sim_count_reported is None or request.user.sim_count_reported < active_sims:
+                request.user.sim_count_reported = active_sims
+                request.user.sims_reported_at = timezone.now()
+                request.user.save(update_fields=['sim_count_reported', 'sims_reported_at', 'updated_at'])
             Consumo.objects.filter(dispositivo=request.user, sim__isnull=True).update(sim=sim)
             response_data = {
                 'id': sim.id,
