@@ -55,6 +55,7 @@ class SimTransferConflict(models.Model):
         TRANSFERRED = 'TRANSFERRED', 'Transferida'
         STALE = 'STALE', 'Desactualizada'
         DISMISSED = 'DISMISSED', 'Conservada'
+        ACKNOWLEDGED = 'ACKNOWLEDGED', 'Aviso visto'
 
     sim = models.ForeignKey(Sim, on_delete=models.CASCADE, related_name='transfer_conflicts')
     source_device = models.ForeignKey(

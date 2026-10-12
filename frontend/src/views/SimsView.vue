@@ -19,31 +19,16 @@
     <section v-if="transferConflicts.length" class="transfer-alerts" aria-live="polite">
       <article v-for="conflict in transferConflicts" :key="conflict.id" class="transfer-alert">
         <div class="transfer-alert-copy">
-          <strong>Esta SIM se detectó en otro dispositivo</strong>
-          <span>
-            ICCID {{ conflict.iccid || 'no disponible' }}:
-            está asignada a <b>{{ conflict.source_device_name }}</b> y apareció en
-            <b>{{ conflict.target_device_name }}</b>.
-          </span>
+          <strong>SIM cambiada de dispositivo</strong>
+          <span>La SIM {{ conflict.iccid || conflict.numero_telefonico || '' }} se asignó a <b>{{ conflict.target_device_name }}</b>.</span>
         </div>
-        <div class="transfer-alert-actions">
-          <button
-            class="transfer-keep-btn"
-            type="button"
-            :disabled="transferringConflictIds.includes(conflict.id)"
-            @click="resolveSimTransfer(conflict, 'dismiss')"
-          >
-            Mantener actual
-          </button>
-          <button
-            class="transfer-confirm-btn"
-            type="button"
-            :disabled="transferringConflictIds.includes(conflict.id)"
-            @click="resolveSimTransfer(conflict, 'transfer')"
-          >
-            {{ transferringConflictIds.includes(conflict.id) ? 'Procesando...' : 'Confirmar transferencia' }}
-          </button>
-        </div>
+        <button
+          class="transfer-alert-close"
+          type="button"
+          aria-label="Cerrar aviso"
+          :disabled="transferringConflictIds.includes(conflict.id)"
+          @click="acknowledgeTransfer(conflict)"
+        >×</button>
       </article>
     </section>
 
@@ -307,21 +292,14 @@ async function loadSims() {
   }
 }
 
-async function resolveSimTransfer(conflict, action) {
-  const simName = conflict.numero_telefonico || conflict.iccid || `SIM ${conflict.sim_id}`;
-  const transfer = action === 'transfer';
-  const accepted = window.confirm(transfer
-    ? `¿Transferir ${simName} de ${conflict.source_device_name} a ${conflict.target_device_name}?\n\nLa SIM dejará de estar asignada al dispositivo anterior.`
-    : `¿Mantener ${simName} asignada a ${conflict.source_device_name}?`);
-  if (!accepted) return;
-
+async function acknowledgeTransfer(conflict) {
   transferringConflictIds.value = [...transferringConflictIds.value, conflict.id];
   try {
-    await api.post(`/sims/conflicts/${conflict.id}/${action}/`);
-    await loadSims();
+    await api.post(`/sims/conflicts/${conflict.id}/acknowledge/`);
+    transferConflicts.value = transferConflicts.value.filter((item) => item.id !== conflict.id);
   } catch (error) {
-    console.error('Error resolviendo conflicto de SIM:', error);
-    window.alert(error.response?.data?.detail || 'No fue posible resolver el conflicto de la SIM.');
+    console.error('Error cerrando aviso de transferencia de SIM:', error);
+    window.alert(error.response?.data?.detail || 'No fue posible cerrar el aviso.');
   } finally {
     transferringConflictIds.value = transferringConflictIds.value.filter((id) => id !== conflict.id);
   }
@@ -551,39 +529,20 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-.transfer-confirm-btn {
+.transfer-alert-close {
   flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
   border: 0;
-  border-radius: 7px;
-  padding: 9px 12px;
-  background: #b45309;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.transfer-confirm-btn:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.transfer-alert-actions {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 8px;
-}
-
-.transfer-keep-btn {
-  border: 1px solid #d6b56d;
-  border-radius: 7px;
-  padding: 9px 12px;
+  border-radius: 50%;
   background: transparent;
   color: #713f12;
-  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-.transfer-keep-btn:disabled {
+.transfer-alert-close:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -1292,8 +1251,7 @@ onBeforeUnmount(() => {
   .monthly-toolbar, .monthly-actions { align-items: stretch; flex-direction: column; }
   .monthly-actions input, .export-btn { width: 100%; }
   .transfer-alert { align-items: stretch; flex-direction: column; }
-  .transfer-alert-actions { flex-direction: column-reverse; }
-  .transfer-alert-actions button { width: 100%; }
+  .transfer-alert-close { align-self: flex-end; }
 }
 
 /* Inventario de líneas */

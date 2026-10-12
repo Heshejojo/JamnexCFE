@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+from django.apps import apps
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -5,6 +8,23 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from areas.models import Area
 from dispositivos.models import Dispositivo
 from usuarios.models import Usuario
+
+
+class DemoUserPostMigrateTest(TestCase):
+    def test_existing_admin_username_does_not_break_migrate(self):
+        admin = Usuario.objects.create_superuser(
+            username='admin',
+            email='existing-admin@example.com',
+            password='test-password',
+        )
+
+        with patch('usuarios.apps.sys.argv', ['manage.py', 'migrate']):
+            from usuarios.apps import create_demo_user
+
+            create_demo_user(sender=apps.get_app_config('usuarios'))
+
+        self.assertTrue(Usuario.objects.filter(pk=admin.pk).exists())
+        self.assertEqual(Usuario.objects.filter(username='admin').count(), 1)
 
 
 class UsuariosAuthSmokeTest(TestCase):

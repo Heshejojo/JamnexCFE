@@ -38,7 +38,7 @@ class SimTransferConflictListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         return SimTransferConflict.objects.filter(
-            status=SimTransferConflict.Status.PENDING,
+            status=SimTransferConflict.Status.TRANSFERRED,
         ).select_related('sim', 'source_device', 'target_device').order_by('-created_at')
 
 
@@ -46,7 +46,7 @@ class SimTransferConflictActionAPIView(APIView):
     permission_classes = [RolePermission]
 
     def post(self, request, pk, action):
-        if action not in {'transfer', 'dismiss'}:
+        if action not in {'transfer', 'dismiss', 'acknowledge'}:
             return Response({'detail': 'Acción no válida.'}, status=400)
         with transaction.atomic():
             conflict = get_object_or_404(
@@ -54,10 +54,15 @@ class SimTransferConflictActionAPIView(APIView):
                 pk=pk,
             )
             if conflict.status != SimTransferConflict.Status.PENDING:
-                return Response(
-                    {'detail': 'Esta solicitud ya fue atendida.'},
-                    status=409,
-                )
+                if (
+                    action == 'acknowledge'
+                    and conflict.status == SimTransferConflict.Status.TRANSFERRED
+                ):
+                    conflict.status = SimTransferConflict.Status.ACKNOWLEDGED
+                    conflict.resolved_at = timezone.now()
+                    conflict.save(update_fields=['status', 'resolved_at'])
+                    return Response({'id': conflict.id, 'status': conflict.status})
+                return Response({'detail': 'Esta solicitud ya fue atendida.'}, status=409)
 
             if action == 'transfer':
                 sim = Sim.objects.select_for_update().get(pk=conflict.sim_id)

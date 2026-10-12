@@ -13,7 +13,9 @@ def create_demo_user(sender, **kwargs):
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
-    if not User.objects.filter(email='admin@agente.cfe').exists():
+    if not User.objects.filter(
+        username='admin',
+    ).exists() and not User.objects.filter(email='admin@agente.cfe').exists():
         User.objects.create_superuser(
             username='admin',
             email='admin@agente.cfe',
@@ -27,4 +29,3 @@ def create_demo_user(sender, **kwargs):
 class UsuariosConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'usuarios'
-
