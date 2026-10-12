@@ -1,14 +1,26 @@
 from django.db import models
+from django.db.models import Q
 
 from dispositivos.models import Dispositivo
 from operadores.models import Operador
 from trabajadores.models import Trabajador
 
 
+def normalize_iccid(value):
+    normalized = ''.join(character for character in str(value or '').upper() if character.isalnum())
+    if normalized.startswith('S') and normalized[1:].isdigit():
+        normalized = normalized[1:]
+    normalized = normalized.rstrip('F')
+    if normalized.isdigit() and len(normalized) == 20:
+        normalized = normalized[:19]
+    return normalized
+
+
 class Sim(models.Model):
     dispositivo = models.ForeignKey(Dispositivo, on_delete=models.SET_NULL, null=True, blank=True, related_name='sims')
     sim_uuid = models.CharField(max_length=255, unique=True, null=True, blank=True)
     iccid = models.CharField(max_length=255, null=True, blank=True)
+    iccid_normalized = models.CharField(max_length=255, blank=True, db_index=True)
     numero_telefonico = models.CharField(max_length=50, null=True, blank=True)
     operador = models.ForeignKey(Operador, on_delete=models.PROTECT, related_name='sims', null=True, blank=True)
     pais = models.CharField(max_length=100, blank=True)
@@ -28,6 +40,52 @@ class Sim(models.Model):
 
     def __str__(self):
         return self.sim_uuid or self.iccid or f'SIM {self.pk}'
+
+    def save(self, *args, **kwargs):
+        self.iccid_normalized = normalize_iccid(self.iccid)
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None and 'iccid_normalized' not in update_fields:
+            kwargs['update_fields'] = [*update_fields, 'iccid_normalized']
+        super().save(*args, **kwargs)
+
+
+class SimTransferConflict(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pendiente'
+        TRANSFERRED = 'TRANSFERRED', 'Transferida'
+        STALE = 'STALE', 'Desactualizada'
+        DISMISSED = 'DISMISSED', 'Conservada'
+
+    sim = models.ForeignKey(Sim, on_delete=models.CASCADE, related_name='transfer_conflicts')
+    source_device = models.ForeignKey(
+        Dispositivo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='outgoing_sim_transfer_conflicts',
+    )
+    target_device = models.ForeignKey(
+        Dispositivo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='incoming_sim_transfer_conflicts',
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['sim', 'target_device'],
+                condition=Q(status='PENDING'),
+                name='unique_pending_sim_transfer_target',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.sim} transfer request ({self.status})'
 
 
 class AsignacionSim(models.Model):

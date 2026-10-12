@@ -16,6 +16,37 @@
       </div>
     </header>
 
+    <section v-if="transferConflicts.length" class="transfer-alerts" aria-live="polite">
+      <article v-for="conflict in transferConflicts" :key="conflict.id" class="transfer-alert">
+        <div class="transfer-alert-copy">
+          <strong>Esta SIM se detectó en otro dispositivo</strong>
+          <span>
+            ICCID {{ conflict.iccid || 'no disponible' }}:
+            está asignada a <b>{{ conflict.source_device_name }}</b> y apareció en
+            <b>{{ conflict.target_device_name }}</b>.
+          </span>
+        </div>
+        <div class="transfer-alert-actions">
+          <button
+            class="transfer-keep-btn"
+            type="button"
+            :disabled="transferringConflictIds.includes(conflict.id)"
+            @click="resolveSimTransfer(conflict, 'dismiss')"
+          >
+            Mantener actual
+          </button>
+          <button
+            class="transfer-confirm-btn"
+            type="button"
+            :disabled="transferringConflictIds.includes(conflict.id)"
+            @click="resolveSimTransfer(conflict, 'transfer')"
+          >
+            {{ transferringConflictIds.includes(conflict.id) ? 'Procesando...' : 'Confirmar transferencia' }}
+          </button>
+        </div>
+      </article>
+    </section>
+
     <div class="sim-layout">
       <section class="panel inventory-panel">
         <div class="panel-topline">
@@ -188,6 +219,8 @@ const monthLabel = computed(() => {
 const editingSim = ref(false);
 const savingEdit = ref(false);
 const editForm = reactive({ numero_telefonico: '', iccid: '' });
+const transferConflicts = ref([]);
+const transferringConflictIds = ref([]);
 
 const filteredSims = computed(() =>
   sims.value.filter((sim) =>
@@ -205,17 +238,25 @@ async function loadSims() {
   loading.value = true;
   loadError.value = '';
   try {
-    const [simsResponse, consumptionResponse, networksResponse, devicesResponse] = await Promise.all([
+    const [simsResponse, consumptionResponse, networksResponse, devicesResponse, conflictsResponse] = await Promise.all([
       api.get('/sims/'),
       api.get('/consumos/'),
       api.get('/redes/'),
       api.get('/dispositivos/'),
+      api.get('/sims/conflicts/').catch((error) => {
+        if (error.response?.status === 404) {
+          console.warn('El backend aún no ofrece alertas de transferencia de SIM.');
+          return { data: [] };
+        }
+        throw error;
+      }),
     ]);
 
     const simsList = asList(simsResponse.data);
     const consumption = asList(consumptionResponse.data);
     const networks = asList(networksResponse.data);
     const devices = asList(devicesResponse.data);
+    transferConflicts.value = asList(conflictsResponse.data);
     consumptionRecords.value = consumption;
 
     sims.value = simsList.map((sim) => {
@@ -263,6 +304,26 @@ async function loadSims() {
       : 'No fue posible cargar las SIMs.';
   } finally {
     loading.value = false;
+  }
+}
+
+async function resolveSimTransfer(conflict, action) {
+  const simName = conflict.numero_telefonico || conflict.iccid || `SIM ${conflict.sim_id}`;
+  const transfer = action === 'transfer';
+  const accepted = window.confirm(transfer
+    ? `¿Transferir ${simName} de ${conflict.source_device_name} a ${conflict.target_device_name}?\n\nLa SIM dejará de estar asignada al dispositivo anterior.`
+    : `¿Mantener ${simName} asignada a ${conflict.source_device_name}?`);
+  if (!accepted) return;
+
+  transferringConflictIds.value = [...transferringConflictIds.value, conflict.id];
+  try {
+    await api.post(`/sims/conflicts/${conflict.id}/${action}/`);
+    await loadSims();
+  } catch (error) {
+    console.error('Error resolviendo conflicto de SIM:', error);
+    window.alert(error.response?.data?.detail || 'No fue posible resolver el conflicto de la SIM.');
+  } finally {
+    transferringConflictIds.value = transferringConflictIds.value.filter((id) => id !== conflict.id);
   }
 }
 
@@ -456,6 +517,76 @@ onBeforeUnmount(() => {
 .sync-state.syncing i { background: #f59e0b; }
 .sync-state.failed { color: #dc2626; }
 .sync-state.failed i { background: #ef4444; }
+
+.transfer-alerts {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.transfer-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #f5cf78;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #713f12;
+}
+
+.transfer-alert-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.transfer-alert-copy strong {
+  font-size: 0.94rem;
+}
+
+.transfer-alert-copy span {
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.transfer-confirm-btn {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 12px;
+  background: #b45309;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.transfer-confirm-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.transfer-alert-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.transfer-keep-btn {
+  border: 1px solid #d6b56d;
+  border-radius: 7px;
+  padding: 9px 12px;
+  background: transparent;
+  color: #713f12;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.transfer-keep-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 
 .primary-btn {
   border: 0;
@@ -1160,6 +1291,9 @@ onBeforeUnmount(() => {
   .sim-page-title { align-items: flex-start; }
   .monthly-toolbar, .monthly-actions { align-items: stretch; flex-direction: column; }
   .monthly-actions input, .export-btn { width: 100%; }
+  .transfer-alert { align-items: stretch; flex-direction: column; }
+  .transfer-alert-actions { flex-direction: column-reverse; }
+  .transfer-alert-actions button { width: 100%; }
 }
 
 /* Inventario de líneas */

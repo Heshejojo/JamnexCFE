@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -9,7 +10,7 @@ from dispositivos.models import Dispositivo
 from dispositivos.serializers import DispositivoSerializer
 from redes.models import RegistroRed
 from redes.serializers import RegistroRedSerializer
-from sims.models import Sim
+from sims.models import Sim, SimTransferConflict, normalize_iccid
 
 
 class DeviceActivityTimeoutTest(TestCase):
@@ -93,6 +94,30 @@ class DeviceRegisterManualFieldsTest(TestCase):
         self.assertEqual(device.serial, 'SERIAL-MANUAL')
         self.assertEqual(device.imei_1, 'IMEI-MANUAL')
         self.assertEqual(device.modelo, 'Updated model')
+
+    def test_register_fills_empty_serial_and_ignores_extra_fields(self):
+        client = APIClient()
+        client.post(
+            '/api/device/register/',
+            {'device_uuid': 'fill-serial-test'},
+            format='json',
+        )
+
+        response = client.post(
+            '/api/device/register/',
+            {
+                'device_uuid': 'fill-serial-test',
+                'serial': 'SERIAL-APP',
+                'ram_usada': 100,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            Dispositivo.objects.get(device_uuid='fill-serial-test').serial,
+            'SERIAL-APP',
+        )
 
 
 class DeviceConsumptionMobileOnlyTest(TestCase):
@@ -244,3 +269,178 @@ class DeviceSimPhoneNumberTest(TestCase):
         sim = Sim.objects.get(sim_uuid=self.sim_uuid)
         self.assertEqual(sim.iccid, self.iccid)
         self.assertEqual(sim.numero_telefonico, self.phone_number)
+
+
+class DeviceSimTransferTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.source = Dispositivo.objects.create(device_uuid='sim-source-device')
+        self.target = Dispositivo.objects.create(
+            device_uuid='sim-target-device',
+            fabricante='Lenovo',
+            modelo='TB-7104I',
+        )
+        self.sim = Sim.objects.create(
+            dispositivo=self.source,
+            sim_uuid='source-subscription-id',
+            iccid='S.8952020320430379646',
+            numero_telefonico='+52 555 123 4567',
+        )
+        self.target_registration = self.client.post(
+            '/api/device/register/',
+            {'device_uuid': self.target.device_uuid},
+            format='json',
+        )
+        self.device_headers = {
+            'HTTP_AUTHORIZATION': f"Device {self.target_registration.data['token']}",
+        }
+
+    def test_same_iccid_creates_one_pending_conflict_instead_of_duplicate_sim(self):
+        payload = {
+            'sim_uuid': 'target-subscription-id',
+            'iccid': '89520203204303796467F',
+            'numero_telefonico': '+52 555 123 4567',
+        }
+
+        first_response = self.client.post(
+            '/api/device/sim/',
+            payload,
+            format='json',
+            **self.device_headers,
+        )
+        second_response = self.client.post(
+            '/api/device/sim/',
+            payload,
+            format='json',
+            **self.device_headers,
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertTrue(first_response.data['conflict'])
+        self.assertFalse(first_response.data['available'])
+        self.assertEqual(second_response.data['conflict_id'], first_response.data['conflict_id'])
+        self.assertEqual(Sim.objects.filter(iccid=self.sim.iccid).count(), 1)
+        self.assertEqual(
+            SimTransferConflict.objects.filter(
+                sim=self.sim,
+                target_device=self.target,
+                status=SimTransferConflict.Status.PENDING,
+            ).count(),
+            1,
+        )
+        self.sim.refresh_from_db()
+        self.assertEqual(self.sim.dispositivo, self.source)
+
+    def test_iccid_normalization_matches_prefix_f_and_twentieth_digit_variants(self):
+        expected = '8952020320430379646'
+        self.assertEqual(normalize_iccid('S.8952020320430379646'), expected)
+        self.assertEqual(normalize_iccid('8952020320430379646F'), expected)
+        self.assertEqual(normalize_iccid('89520203204303796467'), expected)
+
+    def test_transfer_requires_confirmation_and_moves_existing_sim(self):
+        conflict = SimTransferConflict.objects.create(
+            sim=self.sim,
+            source_device=self.source,
+            target_device=self.target,
+        )
+        admin = get_user_model().objects.create_superuser(
+            username='sim-transfer-admin',
+            email='sim-transfer@example.com',
+            password='test-password',
+        )
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+
+        response = admin_client.get('/api/sims/conflicts/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['source_device_name'], self.source.device_uuid)
+        self.assertEqual(response.data[0]['target_device_name'], 'Lenovo TB-7104I')
+
+        response = admin_client.post(
+            f'/api/sims/conflicts/{conflict.id}/transfer/',
+            {},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.sim.refresh_from_db()
+        conflict.refresh_from_db()
+        self.assertEqual(self.sim.dispositivo, self.target)
+        self.assertEqual(conflict.status, SimTransferConflict.Status.TRANSFERRED)
+        self.assertEqual(Sim.objects.filter(iccid=self.sim.iccid).count(), 1)
+
+    def test_transfer_rejects_a_conflict_if_sim_assignment_changed(self):
+        conflict = SimTransferConflict.objects.create(
+            sim=self.sim,
+            source_device=self.source,
+            target_device=self.target,
+        )
+        other_device = Dispositivo.objects.create(device_uuid='sim-other-device')
+        self.sim.dispositivo = other_device
+        self.sim.save(update_fields=['dispositivo'])
+        admin = get_user_model().objects.create_superuser(
+            username='stale-transfer-admin',
+            email='stale-transfer@example.com',
+            password='test-password',
+        )
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+
+        response = admin_client.post(
+            f'/api/sims/conflicts/{conflict.id}/transfer/',
+            {},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.sim.refresh_from_db()
+        conflict.refresh_from_db()
+        self.assertEqual(self.sim.dispositivo, other_device)
+        self.assertEqual(conflict.status, SimTransferConflict.Status.STALE)
+
+    def test_dismissed_conflict_keeps_assignment_and_does_not_reappear(self):
+        conflict = SimTransferConflict.objects.create(
+            sim=self.sim,
+            source_device=self.source,
+            target_device=self.target,
+        )
+        admin = get_user_model().objects.create_superuser(
+            username='dismiss-transfer-admin',
+            email='dismiss-transfer@example.com',
+            password='test-password',
+        )
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+
+        response = admin_client.post(
+            f'/api/sims/conflicts/{conflict.id}/dismiss/',
+            {},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.sim.refresh_from_db()
+        conflict.refresh_from_db()
+        self.assertEqual(self.sim.dispositivo, self.source)
+        self.assertEqual(conflict.status, SimTransferConflict.Status.DISMISSED)
+
+        sync_response = self.client.post(
+            '/api/device/sim/',
+            {
+                'sim_uuid': 'target-subscription-id',
+                'iccid': '8952020320430379646',
+                'numero_telefonico': '+52 555 123 4567',
+            },
+            format='json',
+            **self.device_headers,
+        )
+        self.assertEqual(sync_response.status_code, 200)
+        self.assertTrue(sync_response.data['dismissed'])
+        self.assertEqual(
+            SimTransferConflict.objects.filter(
+                sim=self.sim,
+                target_device=self.target,
+                status=SimTransferConflict.Status.PENDING,
+            ).count(),
+            0,
+        )
