@@ -20,7 +20,7 @@
       <article v-for="conflict in transferConflicts" :key="conflict.id" class="transfer-alert">
         <div class="transfer-alert-copy">
           <strong>SIM cambiada de dispositivo</strong>
-          <span>La SIM {{ conflict.iccid || conflict.numero_telefonico || '' }} se asignó a <b>{{ conflict.target_device_name }}</b>.</span>
+          <span>La SIM {{ conflict.iccid || conflict.numero_telefonico || '' }} cambió de <b>{{ conflict.source_device_name }}</b> a <b>{{ conflict.target_device_name }}</b>.</span>
         </div>
         <button
           class="transfer-alert-close"

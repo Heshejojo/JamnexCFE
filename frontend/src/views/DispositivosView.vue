@@ -30,6 +30,12 @@
             <div class="item-info">
               <strong>{{ item.modelo || item.device_uuid }}</strong>
               <small>{{ item.fabricante || 'Sin info' }} · {{ item.serial || 'Sin número de serie' }}</small>
+              <small
+                class="sim-report-status"
+                :class="{ missing: item.simCount === 0, unknown: item.simCount === null }"
+              >
+                {{ getSimReportText(item.simCount) }}
+              </small>
             </div>
             <div class="row-actions">
               <span class="status-badge" :class="item.en_linea ? 'active' : 'inactive'">
@@ -63,6 +69,26 @@
               <button v-if="selectedDevice" class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedDevice = null">Cerrar</button>
             </div>
+          </div>
+
+          <div
+            v-if="selectedDevice.simCount === 0"
+            class="sim-report-alert"
+            role="status"
+          >
+            <strong>Este móvil no ha enviado datos de ninguna SIM</strong>
+            <span>Puede no tener una SIM instalada o la app no pudo leerla.</span>
+          </div>
+          <div
+            v-else-if="selectedDevice.simCount === null"
+            class="sim-report-alert unavailable"
+            role="status"
+          >
+            <strong>No se pudo verificar la información de SIM</strong>
+            <span>Actualiza la página o revisa la conexión con el servidor.</span>
+          </div>
+          <div v-else class="sim-report-ok" role="status">
+            La app ha enviado datos de {{ selectedDevice.simCount }} SIM{{ selectedDevice.simCount === 1 ? '' : 's' }}.
           </div>
 
           <div class="device-summary">
@@ -236,6 +262,12 @@ function getNetworkText(deviceId) {
   return network.tipo_conexion === 'WIFI' ? 'Wi‑Fi' : network.tipo_conexion === 'DATOS_MOVILES' ? 'Datos móviles' : 'Sin conexión';
 }
 
+function getSimReportText(count) {
+  if (count === null) return 'SIM: no verificada';
+  if (count === 0) return 'Sin datos de SIM';
+  return `${count} SIM${count === 1 ? '' : 's'} reportada${count === 1 ? '' : 's'}`;
+}
+
 function getDeviceApps(deviceId) {
   const apps = deviceDetails.value[deviceId]?.apps || [];
   return Array.isArray(apps)
@@ -287,8 +319,28 @@ async function loadData() {
   loading.value = true;
   loadError.value = '';
   try {
-    const { data } = await api.get('/dispositivos/');
-    items.value = Array.isArray(data) ? data : data?.results || [];
+    const [devicesResponse, simsResponse] = await Promise.all([
+      api.get('/dispositivos/'),
+      api.get('/sims/').catch((error) => {
+        console.error('No fue posible verificar los datos de SIM:', error);
+        return null;
+      }),
+    ]);
+    const devices = Array.isArray(devicesResponse.data)
+      ? devicesResponse.data
+      : devicesResponse.data?.results || [];
+    const sims = simsResponse
+      ? (Array.isArray(simsResponse.data) ? simsResponse.data : simsResponse.data?.results || [])
+      : null;
+    items.value = devices.map((device) => ({
+      ...device,
+      simCount: sims === null
+        ? null
+        : sims.filter((sim) => Number(sim.dispositivo) === Number(device.id)).length,
+    }));
+    if (selectedDevice.value) {
+      selectedDevice.value = items.value.find((item) => item.id === selectedDevice.value.id) || null;
+    }
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (error) {
     console.error(error);
@@ -613,6 +665,48 @@ h2 {
   color: #64748b;
   font-size: 0.8rem;
   margin-top: 4px;
+}
+
+.sim-report-status {
+  color: #166534 !important;
+  font-weight: 700;
+}
+
+.sim-report-status.missing {
+  color: #b91c1c !important;
+}
+
+.sim-report-status.unknown {
+  color: #92400e !important;
+}
+
+.sim-report-alert,
+.sim-report-ok {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.sim-report-alert span {
+  font-size: 0.85rem;
+}
+
+.sim-report-alert.unavailable {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.sim-report-ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .row-actions {
