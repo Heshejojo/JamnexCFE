@@ -258,7 +258,7 @@ class MainActivity : FlutterActivity() {
 		val manager = getSystemService(SubscriptionManager::class.java)
 		val subscriptions = manager?.activeSubscriptionInfoList.orEmpty()
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-			val defaultId = manager?.defaultDataSubscriptionId
+			val defaultId = SubscriptionManager.getDefaultDataSubscriptionId()
 			subscriptions.firstOrNull { it.subscriptionId == defaultId }?.simSlotIndex
 		} else {
 			subscriptions.singleOrNull()?.simSlotIndex

@@ -261,7 +261,7 @@ class JamnexSyncWorker(
 	private fun defaultDataSimSlot(subscriptions: List<SubscriptionInfo>): Int? = try {
 		val manager = applicationContext.getSystemService(SubscriptionManager::class.java)
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-			val defaultId = manager?.defaultDataSubscriptionId
+			val defaultId = SubscriptionManager.getDefaultDataSubscriptionId()
 			subscriptions.firstOrNull { it.subscriptionId == defaultId }?.simSlotIndex
 		} else {
 			subscriptions.singleOrNull()?.simSlotIndex
