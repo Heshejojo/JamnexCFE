@@ -89,8 +89,8 @@
             <span>Actualiza la página o revisa la conexión con el servidor.</span>
           </div>
           <div v-else-if="selectedDevice.simCount === 2" class="sim-report-ok" role="status">
-            <strong>Se recibieron datos de las dos SIM</strong>
-            <span>Ambas líneas están registradas para este dispositivo.</span>
+            <strong>Se recibieron datos de dos SIM</strong>
+            <span>Ambas líneas están registradas en este dispositivo.</span>
           </div>
 
           <div class="device-summary">
