@@ -1,1 +1,6 @@
-find /home/joseluis -maxdepth 5 -type f -path '*/bin/activate' -print
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo systemctl show jamnex -p ExecStart -p WorkingDirectory -p EnviromentsFiles --no-pager
+ExecStart={ path=/home/joseluis/JamnexCFE/backend/venv/bin/gunicorn ; argv[]=/home/joseluis/JamnexCFE/backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 config.wsgi ; ignore_errors=no ; start_time=[Mon 2026-10-12 09:35:47 CST] ; stop_time=[n/a] ; pid=234982 ; code=(null) ; status=0/0 }
+WorkingDirectory=/home/joseluis/JamnexCFE/backend
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ find /home/joseluis -maxdepth 5 -type f -path '*/bin/activate' -print
+/home/joseluis/JamnexCFE/backend/venv/bin/activate
+joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ 
