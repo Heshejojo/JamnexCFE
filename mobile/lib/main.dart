@@ -168,10 +168,10 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         final payload =
             Map<String, dynamic>.from(item['payload'] as Map? ?? {});
         payload['device_uuid'] = deviceUuid;
-        await _apiService.postDeviceJson(item['endpoint'] as String, payload);
+        await _postDeviceEvent(item['endpoint'] as String, payload);
       });
       for (final event in pendingEvents) {
-        await _apiService.postDeviceJson(
+        await _postDeviceEvent(
           event['endpoint'] as String,
           Map<String, dynamic>.from(event['payload'] as Map),
         );
@@ -204,6 +204,17 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         });
       }
     }
+  }
+
+  Future<void> _postDeviceEvent(
+    String endpoint,
+    Map<String, dynamic> payload,
+  ) async {
+    if (endpoint == '/device/sims/status/') {
+      await _apiService.postDeviceJsonIfAvailable(endpoint, payload);
+      return;
+    }
+    await _apiService.postDeviceJson(endpoint, payload);
   }
 
   String _networkType(String? connectionType) {

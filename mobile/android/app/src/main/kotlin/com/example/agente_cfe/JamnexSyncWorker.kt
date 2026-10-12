@@ -155,6 +155,7 @@ class JamnexSyncWorker(
 				json("sim_count" to subscriptions.size),
 				token,
 				devicePayload,
+				allowNotFound = true,
 			)
 		}
 
@@ -195,14 +196,23 @@ class JamnexSyncWorker(
 		payload: JSONObject,
 		currentToken: String,
 		devicePayload: JSONObject,
+		allowNotFound: Boolean = false,
 	): String {
 		val response = request(baseUrl, endpoint, payload, currentToken)
 		if (response.first in 200..299) return currentToken
+		if (allowNotFound && response.first == HttpURLConnection.HTTP_NOT_FOUND) {
+			Log.w("JamnexSyncWorker", "El backend aún no admite $endpoint; se omite este reporte")
+			return currentToken
+		}
 		if (response.first != HttpURLConnection.HTTP_UNAUTHORIZED) {
 			error("Backend respondió HTTP ${response.first} en $endpoint")
 		}
 		val refreshedToken = registerDevice(baseUrl, devicePayload)
 		val retryResponse = request(baseUrl, endpoint, payload, refreshedToken)
+		if (allowNotFound && retryResponse.first == HttpURLConnection.HTTP_NOT_FOUND) {
+			Log.w("JamnexSyncWorker", "El backend aún no admite $endpoint; se omite este reporte")
+			return refreshedToken
+		}
 		if (retryResponse.first !in 200..299) {
 			error("Backend respondió HTTP ${retryResponse.first} en $endpoint")
 		}

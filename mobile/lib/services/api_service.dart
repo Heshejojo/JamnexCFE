@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,17 +28,35 @@ class ApiService {
     final response = await _post('/device/register/', payload);
     final token = response['token'] as String?;
     if (token == null || token.isEmpty) {
-      throw const ApiException(statusCode: 502, message: 'El backend no devolvió token de dispositivo.');
+      throw const ApiException(
+          statusCode: 502,
+          message: 'El backend no devolvió token de dispositivo.');
     }
     setDeviceToken(token);
     return token;
   }
 
-  Future<Map<String, dynamic>> postDeviceJson(String endpoint, Map<String, dynamic> payload) {
+  Future<Map<String, dynamic>> postDeviceJson(
+      String endpoint, Map<String, dynamic> payload) {
     if (_deviceToken == null) {
-      throw const ApiException(statusCode: 401, message: 'El dispositivo no está registrado.');
+      throw const ApiException(
+          statusCode: 401, message: 'El dispositivo no está registrado.');
     }
     return _post(endpoint, payload, deviceToken: _deviceToken);
+  }
+
+  Future<void> postDeviceJsonIfAvailable(
+    String endpoint,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      await postDeviceJson(endpoint, payload);
+    } on ApiException catch (error) {
+      if (error.statusCode != 404) rethrow;
+      debugPrint(
+        'El backend aún no admite $endpoint; se omite solo este reporte.',
+      );
+    }
   }
 
   Future<Map<String, dynamic>> _post(
@@ -77,5 +96,6 @@ class ApiException implements Exception {
   const ApiException({required this.statusCode, required this.message});
 
   @override
-  String toString() => 'ApiException(statusCode: $statusCode, message: $message)';
+  String toString() =>
+      'ApiException(statusCode: $statusCode, message: $message)';
 }
