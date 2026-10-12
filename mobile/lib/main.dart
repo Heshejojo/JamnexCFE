@@ -115,27 +115,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           'tipo_conexion': _networkType(snapshot.connectionType),
         },
       });
-      if (snapshot.mobileDataMb != null ||
-          snapshot.mobileDataDayMb != null ||
-          snapshot.mobileDataWeekMb != null) {
-        pendingEvents.add({
-          'endpoint': '/device/consumption/',
-          'payload': {
-            'consumo_datos_movil':
-                snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
-            'periodo': 'diario',
-          },
-        });
-        if (snapshot.mobileDataWeekMb != null) {
-          pendingEvents.add({
-            'endpoint': '/device/consumption/',
-            'payload': {
-              'consumo_datos_movil': snapshot.mobileDataWeekMb,
-              'periodo': 'semanal',
-            },
-          });
-        }
-      }
       for (final sim in snapshot.sims) {
         pendingEvents.add({
           'endpoint': '/device/sim/',
@@ -155,6 +134,28 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
             'roaming': snapshot.roaming,
           },
         });
+      }
+      if (snapshot.mobileDataMb != null ||
+          snapshot.mobileDataDayMb != null ||
+          snapshot.mobileDataWeekMb != null) {
+        pendingEvents.add({
+          'endpoint': '/device/consumption/',
+          'payload': {
+            'consumo_datos_movil':
+                snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
+            'periodo': 'diario',
+            'sim_slot': snapshot.mobileDataSimSlot ?? -1,
+          },
+        });
+        if (snapshot.mobileDataWeekMb != null) {
+          pendingEvents.add({
+            'endpoint': '/device/consumption/',
+            'payload': {
+              'consumo_datos_movil': snapshot.mobileDataWeekMb,
+              'periodo': 'semanal',
+            },
+          });
+        }
       }
       await _apiService.registerDevice(devicePayload);
       await _syncProvider.retry((item) async {

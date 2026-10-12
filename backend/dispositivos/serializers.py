@@ -62,6 +62,7 @@ class DeviceConsumptionSerializer(serializers.Serializer):
     periodo = serializers.ChoiceField(choices=['diario', 'semanal', 'mensual', 'personalizado'], default='diario')
     fecha = serializers.DateTimeField(required=False)
     sim = serializers.IntegerField(required=False, allow_null=True)
+    sim_slot = serializers.IntegerField(required=False, allow_null=True)
 
 
 class DeviceNetworkSerializer(serializers.Serializer):

@@ -257,11 +257,14 @@ async function loadSims() {
       const consumo_datos_movil = sevenDayConsumption.reduce((sum, c) => sum + Number(c.consumo_datos_movil || 0), 0);
       const today = new Date();
       const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-      const todayRecord = dailyConsumption.find((c) => {
+      const todayRecords = dailyConsumption.filter((c) => {
         const date = new Date(c.fecha);
         return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` === todayKey;
       });
-      const consumo_datos_movil_hoy = Number(todayRecord?.consumo_datos_movil || 0);
+      const consumo_datos_movil_hoy = todayRecords.reduce(
+        (sum, record) => sum + Number(record.consumo_datos_movil || 0),
+        0,
+      );
       return {
         ...sim,
         dispositivo_nombre: device

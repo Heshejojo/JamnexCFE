@@ -244,6 +244,7 @@ class MainActivity : FlutterActivity() {
 			"imei_2" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(1) }.getOrNull() else null,
 			"mobile_data_day_mb" to queryMobileDataUsage(1),
 			"mobile_data_week_mb" to queryMobileDataUsage(7),
+			"mobile_data_sim_slot" to defaultDataSimSlot(),
 			"mobile_data_limit_mb" to 2048.0,
 			"applications" to visibleApplications(),
 			"network_technology" to networkTechnology(telephonyManager),
@@ -251,6 +252,19 @@ class MainActivity : FlutterActivity() {
 			"carrier_id" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) telephonyManager.simCarrierId else null,
 			"roaming" to runCatching { telephonyManager.isNetworkRoaming }.getOrDefault(false),
 		)
+	}
+
+	private fun defaultDataSimSlot(): Int? = try {
+		val manager = getSystemService(SubscriptionManager::class.java)
+		val subscriptions = manager?.activeSubscriptionInfoList.orEmpty()
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			val defaultId = manager?.defaultDataSubscriptionId
+			subscriptions.firstOrNull { it.subscriptionId == defaultId }?.simSlotIndex
+		} else {
+			subscriptions.singleOrNull()?.simSlotIndex
+		}
+	} catch (_: SecurityException) {
+		null
 	}
 
 	private fun bytesToMb(value: Long): Double {

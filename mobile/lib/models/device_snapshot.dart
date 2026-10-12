@@ -20,6 +20,7 @@ class DeviceSnapshot {
   final double? mobileDataMb;
   final double? mobileDataDayMb;
   final double? mobileDataWeekMb;
+  final int? mobileDataSimSlot;
   final double? mobileDataLimitMb;
   final String? networkTechnology;
   final String? carrierName;
@@ -52,6 +53,7 @@ class DeviceSnapshot {
     this.mobileDataMb,
     this.mobileDataDayMb,
     this.mobileDataWeekMb,
+    this.mobileDataSimSlot,
     this.mobileDataLimitMb,
     this.networkTechnology,
     this.carrierName,

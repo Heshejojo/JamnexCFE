@@ -27,3 +27,29 @@ class Consumo(models.Model):
 
     def __str__(self):
         return f'{self.dispositivo} {self.periodo} {self.consumo_total}'
+
+
+class ConsumoSyncState(models.Model):
+    dispositivo = models.ForeignKey(
+        Dispositivo,
+        on_delete=models.CASCADE,
+        related_name='consumo_sync_states',
+    )
+    fecha = models.DateField()
+    ultimo_acumulado_mb = models.FloatField(default=0)
+    sim = models.ForeignKey(
+        Sim,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='consumo_sync_states',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['dispositivo', 'fecha'],
+                name='unique_consumption_sync_device_date',
+            ),
+        ]

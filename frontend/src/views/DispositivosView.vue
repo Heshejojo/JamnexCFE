@@ -31,6 +31,7 @@
               <strong>{{ item.modelo || item.device_uuid }}</strong>
               <small>{{ item.fabricante || 'Sin info' }} · {{ item.serial || 'Sin número de serie' }}</small>
               <small
+                v-if="item.simCount !== 1"
                 class="sim-report-status"
                 :class="{ missing: item.simCount === 0, unknown: item.simCount === null }"
               >
@@ -87,8 +88,9 @@
             <strong>No se pudo verificar la información de SIM</strong>
             <span>Actualiza la página o revisa la conexión con el servidor.</span>
           </div>
-          <div v-else class="sim-report-ok" role="status">
-            La app ha enviado datos de {{ selectedDevice.simCount }} SIM{{ selectedDevice.simCount === 1 ? '' : 's' }}.
+          <div v-else-if="selectedDevice.simCount === 2" class="sim-report-ok" role="status">
+            <strong>Se recibieron datos de las dos SIM</strong>
+            <span>Ambas líneas están registradas para este dispositivo.</span>
           </div>
 
           <div class="device-summary">
@@ -265,7 +267,8 @@ function getNetworkText(deviceId) {
 function getSimReportText(count) {
   if (count === null) return 'SIM: no verificada';
   if (count === 0) return 'Sin datos de SIM';
-  return `${count} SIM${count === 1 ? '' : 's'} reportada${count === 1 ? '' : 's'}`;
+  if (count === 2) return '2 SIM reportadas';
+  return `${count} SIM reportadas`;
 }
 
 function getDeviceApps(deviceId) {
@@ -704,9 +707,16 @@ h2 {
 }
 
 .sim-report-ok {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   border-color: #bbf7d0;
   background: #f0fdf4;
   color: #166534;
+}
+
+.sim-report-ok span {
+  font-size: 0.85rem;
 }
 
 .row-actions {

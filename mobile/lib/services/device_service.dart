@@ -108,6 +108,7 @@ class DeviceService {
       mobileDataMb: (telemetry['mobile_data_mb'] as num?)?.toDouble(),
       mobileDataDayMb: (telemetry['mobile_data_day_mb'] as num?)?.toDouble(),
       mobileDataWeekMb: (telemetry['mobile_data_week_mb'] as num?)?.toDouble(),
+      mobileDataSimSlot: (telemetry['mobile_data_sim_slot'] as num?)?.toInt(),
       mobileDataLimitMb:
           (telemetry['mobile_data_limit_mb'] as num?)?.toDouble(),
       networkTechnology: telemetry['network_technology']?.toString(),

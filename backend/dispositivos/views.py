@@ -2,12 +2,13 @@ import hashlib
 import secrets
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import authentication, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from consumos.models import Consumo
+from consumos.models import Consumo, ConsumoSyncState
 from bateria.models import RegistroBateria
 from ram.models import RegistroRam
 from almacenamiento.models import RegistroAlmacenamiento
@@ -254,34 +255,114 @@ class DeviceConsumptionView(APIView):
         mobile_data = data['consumo_datos_movil']
         total = mobile_data
         fecha = data.get('fecha', timezone.now())
-        sim_id = data.get('sim')
-        sim = Sim.objects.filter(pk=sim_id).first() if sim_id else None
-        if sim is None:
-            sim = Sim.objects.filter(dispositivo=request.user).order_by('-updated_at').first()
-        consumo = Consumo.objects.filter(
-            dispositivo=request.user,
-            periodo=data['periodo'],
-            fecha__date=fecha.date(),
-        ).first()
-        if consumo:
-            consumo.sim = sim
-            consumo.consumo_datos_movil = data['consumo_datos_movil']
-            consumo.consumo_total = total
-            consumo.fecha = fecha
-            consumo.save(update_fields=[
-                'sim', 'consumo_datos_movil', 'consumo_total', 'fecha',
-            ])
-        else:
-            consumo = Consumo.objects.create(
-                dispositivo=request.user,
-                sim=sim,
-                consumo_datos_movil=data['consumo_datos_movil'],
-                consumo_total=total,
-                periodo=data['periodo'],
-                fecha=fecha,
-                fuente='ANDROID',
+        sim = None
+
+        with transaction.atomic():
+            device = type(request.user).objects.select_for_update().get(pk=request.user.pk)
+            if 'sim_slot' in data:
+                if data['sim_slot'] is not None and data['sim_slot'] >= 0:
+                    sim = Sim.objects.filter(
+                        dispositivo=device,
+                        slot=data['sim_slot'],
+                    ).order_by('-updated_at').first()
+            elif data.get('sim'):
+                sim = Sim.objects.filter(
+                    pk=data['sim'],
+                    dispositivo=device,
+                ).first()
+            else:
+                sim = Sim.objects.filter(dispositivo=device).order_by('-updated_at').first()
+
+            if data['periodo'] != 'diario':
+                consumo = Consumo.objects.filter(
+                    dispositivo=device,
+                    sim=sim,
+                    periodo=data['periodo'],
+                    fecha__date=fecha.date(),
+                ).first()
+                if consumo:
+                    consumo.consumo_datos_movil = mobile_data
+                    consumo.consumo_total = total
+                    consumo.fecha = fecha
+                    consumo.save(update_fields=['consumo_datos_movil', 'consumo_total', 'fecha'])
+                else:
+                    consumo = Consumo.objects.create(
+                        dispositivo=device,
+                        sim=sim,
+                        consumo_datos_movil=mobile_data,
+                        consumo_total=total,
+                        periodo=data['periodo'],
+                        fecha=fecha,
+                        fuente='ANDROID',
+                    )
+                return Response(
+                    {'id': consumo.id, 'consumo_total': consumo.consumo_total},
+                    status=status.HTTP_201_CREATED,
+                )
+
+            state, created = ConsumoSyncState.objects.get_or_create(
+                dispositivo=device,
+                fecha=fecha.date(),
+                defaults={'ultimo_acumulado_mb': 0},
             )
-        return Response({'id': consumo.id, 'consumo_total': consumo.consumo_total}, status=status.HTTP_201_CREATED)
+            if created:
+                previous_daily_total = Consumo.objects.filter(
+                    dispositivo=device,
+                    periodo='diario',
+                    fecha__date=fecha.date(),
+                ).aggregate(total=Sum('consumo_datos_movil'))['total'] or 0
+                state.ultimo_acumulado_mb = previous_daily_total
+
+            if not created and state.sim_id != (sim.pk if sim else None):
+                delta = 0
+            else:
+                delta = (
+                    mobile_data - state.ultimo_acumulado_mb
+                    if mobile_data >= state.ultimo_acumulado_mb
+                    else mobile_data
+                )
+            state.ultimo_acumulado_mb = mobile_data
+            state.sim = sim
+            state.save(update_fields=['ultimo_acumulado_mb', 'sim', 'updated_at'])
+
+            if sim and delta > 0:
+                consumo = Consumo.objects.filter(
+                    dispositivo=device,
+                    sim=sim,
+                    periodo='diario',
+                    fecha__date=fecha.date(),
+                ).order_by('pk').first()
+                if consumo:
+                    consumo.consumo_datos_movil += delta
+                    consumo.consumo_total = consumo.consumo_datos_movil
+                    consumo.fecha = fecha
+                    consumo.save(update_fields=['consumo_datos_movil', 'consumo_total', 'fecha'])
+                else:
+                    consumo = Consumo.objects.create(
+                        dispositivo=device,
+                        sim=sim,
+                        consumo_datos_movil=delta,
+                        consumo_total=delta,
+                        periodo='diario',
+                        fecha=fecha,
+                        fuente='ANDROID',
+                    )
+            else:
+                consumo = None
+
+        if consumo is None:
+            return Response(
+                {'id': None, 'consumo_total': 0, 'delta_aplicado': 0},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                'id': consumo.id,
+                'consumo_total': consumo.consumo_total,
+                'delta_aplicado': delta,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class DeviceRevokeView(APIView):

@@ -130,6 +130,18 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
         )
         self.assertEqual(registration.status_code, 201)
         self.device = Dispositivo.objects.get(pk=registration.data['device_id'])
+        self.sim = Sim.objects.create(
+            dispositivo=self.device,
+            sim_uuid='mobile-consumption-sim-1',
+            iccid='8952020320430379646',
+            slot=0,
+        )
+        self.second_sim = Sim.objects.create(
+            dispositivo=self.device,
+            sim_uuid='mobile-consumption-sim-2',
+            iccid='8952020320430379653',
+            slot=1,
+        )
         self.device_headers = {
             'HTTP_AUTHORIZATION': f"Device {registration.data['token']}",
         }
@@ -142,13 +154,14 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
                 'consumo_wifi': 900,
                 'consumo_total': 1000,
                 'periodo': 'diario',
+                'sim_slot': 0,
             },
             format='json',
             **self.device_headers,
         )
 
         self.assertEqual(response.status_code, 201)
-        consumption = Consumo.objects.get(dispositivo=self.device)
+        consumption = Consumo.objects.get(dispositivo=self.device, sim=self.sim)
         self.assertEqual(consumption.consumo_datos_movil, 12.5)
         self.assertEqual(consumption.consumo_wifi, 0)
         self.assertEqual(consumption.consumo_total, 12.5)
@@ -161,6 +174,7 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
                 'consumo_wifi': 700,
                 'consumo_total': 900,
                 'periodo': 'diario',
+                'sim_slot': 0,
             },
             format='json',
             **self.device_headers,
@@ -169,6 +183,57 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
         self.assertEqual(consumption.consumo_datos_movil, 20)
         self.assertEqual(consumption.consumo_wifi, 0)
         self.assertEqual(consumption.consumo_total, 20)
+
+    def test_daily_counter_is_accumulated_separately_for_each_sim(self):
+        def report(value, slot):
+            return self.client.post(
+                '/api/device/consumption/',
+                {
+                    'consumo_datos_movil': value,
+                    'periodo': 'diario',
+                    'sim_slot': slot,
+                },
+                format='json',
+                **self.device_headers,
+            )
+
+        report(10, 0)
+        report(16, 1)
+        report(0, 1)
+        report(3, 1)
+
+        first_sim_consumption = Consumo.objects.get(
+            dispositivo=self.device,
+            sim=self.sim,
+            periodo='diario',
+        )
+        second_sim_consumption = Consumo.objects.get(
+            dispositivo=self.device,
+            sim=self.second_sim,
+            periodo='diario',
+        )
+        self.assertEqual(first_sim_consumption.consumo_datos_movil, 10)
+        self.assertEqual(second_sim_consumption.consumo_datos_movil, 3)
+
+    def test_missing_sim_slot_does_not_assign_usage_to_another_sim(self):
+        response = self.client.post(
+            '/api/device/consumption/',
+            {
+                'consumo_datos_movil': 12,
+                'periodo': 'diario',
+                'sim_slot': -1,
+            },
+            format='json',
+            **self.device_headers,
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertFalse(
+            Consumo.objects.filter(
+                dispositivo=self.device,
+                periodo='diario',
+            ).exists()
+        )
 
     def test_wifi_network_record_stores_only_connection_status(self):
         response = self.client.post(

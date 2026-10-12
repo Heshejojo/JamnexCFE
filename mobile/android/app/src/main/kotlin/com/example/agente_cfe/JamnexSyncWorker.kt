@@ -124,28 +124,8 @@ class JamnexSyncWorker(
 			devicePayload,
 		)
 
-		val dailyUsage = mobileUsageMb(1)
-		val weeklyUsage = mobileUsageMb(7)
-		if (dailyUsage != null) {
-			token = postDevice(
-				baseUrl,
-				"/device/consumption/",
-				json("consumo_datos_movil" to dailyUsage, "periodo" to "diario"),
-				token,
-				devicePayload,
-			)
-		}
-		if (weeklyUsage != null) {
-			token = postDevice(
-				baseUrl,
-				"/device/consumption/",
-				json("consumo_datos_movil" to weeklyUsage, "periodo" to "semanal"),
-				token,
-				devicePayload,
-			)
-		}
-
-		activeSubscriptions().forEach { subscription ->
+		val subscriptions = activeSubscriptions()
+		subscriptions.forEach { subscription ->
 			token = postDevice(
 				baseUrl,
 				"/device/sim/",
@@ -162,6 +142,36 @@ class JamnexSyncWorker(
 					"esim" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) subscription.isEmbedded else false,
 					"tecnologia" to networkTechnology(telephony),
 					"roaming" to runCatching { telephony.isNetworkRoaming }.getOrDefault(false),
+				),
+				token,
+				devicePayload,
+			)
+		}
+
+		val dataSimSlot = defaultDataSimSlot(subscriptions)
+		val dailyUsage = mobileUsageMb(1)
+		val weeklyUsage = mobileUsageMb(7)
+		if (dailyUsage != null) {
+			token = postDevice(
+				baseUrl,
+				"/device/consumption/",
+				json(
+					"consumo_datos_movil" to dailyUsage,
+					"periodo" to "diario",
+					"sim_slot" to (dataSimSlot ?: -1),
+				),
+				token,
+				devicePayload,
+			)
+		}
+		if (weeklyUsage != null) {
+			token = postDevice(
+				baseUrl,
+				"/device/consumption/",
+				json(
+					"consumo_datos_movil" to weeklyUsage,
+					"periodo" to "semanal",
+					"sim_slot" to (dataSimSlot ?: -1),
 				),
 				token,
 				devicePayload,
@@ -246,6 +256,18 @@ class JamnexSyncWorker(
 			?.activeSubscriptionInfoList.orEmpty()
 	} catch (_: SecurityException) {
 		emptyList()
+	}
+
+	private fun defaultDataSimSlot(subscriptions: List<SubscriptionInfo>): Int? = try {
+		val manager = applicationContext.getSystemService(SubscriptionManager::class.java)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			val defaultId = manager?.defaultDataSubscriptionId
+			subscriptions.firstOrNull { it.subscriptionId == defaultId }?.simSlotIndex
+		} else {
+			subscriptions.singleOrNull()?.simSlotIndex
+		}
+	} catch (_: SecurityException) {
+		null
 	}
 
 	private fun mobileUsageMb(days: Int): Double? {
