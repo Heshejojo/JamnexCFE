@@ -78,13 +78,13 @@ class DeviceSimSerializer(serializers.Serializer):
     slot = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     operador_nombre = serializers.CharField(max_length=120, required=False, allow_blank=True, allow_null=True)
     pais = serializers.CharField(max_length=100, required=False, allow_blank=True, allow_null=True)
-    mcc = serializers.CharField(max_length=10, required=False, allow_blank=True)
-    mnc = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    mcc = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)
+    mnc = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)
     numero_telefonico = serializers.CharField(max_length=50, required=False, allow_blank=True, allow_null=True)
     carrier_id = serializers.IntegerField(required=False, allow_null=True)
-    esim = serializers.BooleanField(required=False)
+    esim = serializers.BooleanField(required=False, allow_null=True)
     tecnologia = serializers.CharField(max_length=30, required=False, allow_blank=True, allow_null=True)
-    roaming = serializers.BooleanField(required=False)
+    roaming = serializers.BooleanField(required=False, allow_null=True)
 
 
 class DeviceSimStatusSerializer(serializers.Serializer):

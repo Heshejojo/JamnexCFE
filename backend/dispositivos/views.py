@@ -159,19 +159,19 @@ class DeviceSimView(APIView):
         if operador_nombre:
             operador, _ = Operador.objects.get_or_create(
                 nombre=operador_nombre,
-                defaults={'pais': data.get('pais', ''), 'activo': True},
+                defaults={'pais': data.get('pais') or '', 'activo': True},
             )
         sim_defaults = {
             'dispositivo': request.user,
             'slot': data.get('slot'),
-            'mcc': data.get('mcc', ''),
-            'mnc': data.get('mnc', ''),
+            'mcc': data.get('mcc') or '',
+            'mnc': data.get('mnc') or '',
             'operador': operador,
-            'pais': data.get('pais', ''),
+            'pais': data.get('pais') or '',
             'carrier_id': data.get('carrier_id'),
-            'esim': data.get('esim', False),
-            'tecnologia': data.get('tecnologia', ''),
-            'roaming': data.get('roaming', False),
+            'esim': bool(data.get('esim')),
+            'tecnologia': data.get('tecnologia') or '',
+            'roaming': bool(data.get('roaming')),
             'activo': True,
         }
 
