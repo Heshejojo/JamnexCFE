@@ -329,27 +329,25 @@ class DeviceConsumptionView(APIView):
             state, created = ConsumoSyncState.objects.get_or_create(
                 dispositivo=device,
                 fecha=fecha.date(),
+                sim=sim,
                 defaults={'ultimo_acumulado_mb': 0},
             )
             if created:
                 previous_daily_total = Consumo.objects.filter(
                     dispositivo=device,
+                    sim=sim,
                     periodo='diario',
                     fecha__date=fecha.date(),
                 ).aggregate(total=Sum('consumo_datos_movil'))['total'] or 0
                 state.ultimo_acumulado_mb = previous_daily_total
 
-            if not created and state.sim_id != (sim.pk if sim else None):
-                delta = 0
-            else:
-                delta = (
-                    mobile_data - state.ultimo_acumulado_mb
-                    if mobile_data >= state.ultimo_acumulado_mb
-                    else mobile_data
-                )
+            delta = (
+                mobile_data - state.ultimo_acumulado_mb
+                if mobile_data >= state.ultimo_acumulado_mb
+                else mobile_data
+            )
             state.ultimo_acumulado_mb = mobile_data
-            state.sim = sim
-            state.save(update_fields=['ultimo_acumulado_mb', 'sim', 'updated_at'])
+            state.save(update_fields=['ultimo_acumulado_mb', 'updated_at'])
 
             if sim and delta > 0:
                 consumo = Consumo.objects.filter(

@@ -49,7 +49,7 @@ class ConsumoSyncState(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['dispositivo', 'fecha'],
-                name='unique_consumption_sync_device_date',
+                fields=['dispositivo', 'fecha', 'sim'],
+                name='unique_consumption_sync_device_date_sim',
             ),
         ]
