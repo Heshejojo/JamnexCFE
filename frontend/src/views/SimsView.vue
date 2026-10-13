@@ -32,29 +32,6 @@
       </article>
     </section>
 
-    <details class="movements-panel" :open="movementsTransfers > 0">
-      <summary>
-        <span class="movements-title">⇄ Cambios recientes de SIM <small>(últimos {{ movementsDays }} días)</small></span>
-        <span class="movements-badge" :class="{ alert: movementsTransfers > 0 }">
-          {{ movementsTransfers }} {{ movementsTransfers === 1 ? 'transferencia' : 'transferencias' }}
-        </span>
-      </summary>
-      <p v-if="!movements.length" class="history-empty">No hay movimientos de SIM en este periodo.</p>
-      <ul v-else class="movements-list">
-        <li v-for="event in movements.slice(0, 12)" :key="event.id" :class="event.tipo">
-          <span class="movement-tag">{{ movementLabel(event.tipo) }}</span>
-          <span class="movement-text">
-            <b>{{ event.sim_nombre }}</b>
-            <template v-if="event.tipo === 'transferencia'"> pasó de <b>{{ event.anterior_nombre }}</b> a <b>{{ event.dispositivo_nombre }}</b></template>
-            <template v-else-if="event.tipo === 'reinsertada'"> volvió a ponerse en <b>{{ event.dispositivo_nombre }}</b></template>
-            <template v-else> apareció en <b>{{ event.dispositivo_nombre }}</b></template>
-          </span>
-          <small>{{ formatShortDate(event.fecha) }}</small>
-        </li>
-      </ul>
-      <small v-if="movements.length > 12" class="movements-more">Mostrando 12 de {{ movements.length }} movimientos.</small>
-    </details>
-
     <div class="sim-layout">
       <section class="panel inventory-panel">
         <div class="panel-topline">
@@ -286,9 +263,6 @@ const statusOptions = [
   { value: 'removed', label: 'Dadas de baja' },
   { value: 'shared', label: 'Compartidas' },
 ];
-const movements = ref([]);
-const movementsTransfers = ref(0);
-const movementsDays = ref(30);
 const history = ref([]);
 const historyTotal = ref(0);
 const historyLoading = ref(false);
@@ -387,7 +361,6 @@ async function loadSims() {
       : sims.value[0] || null;
     if (selectedSim.value) loadHistory(selectedSim.value.id);
     else resetHistory();
-    loadMovements();
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (error) {
     console.error('Error cargando SIMs:', error);
@@ -458,23 +431,13 @@ function lastReportText(sim) {
 
 function formatShortDate(value) {
   if (!value) return '—';
-  return new Date(value).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function movementLabel(kind) {
-  return { transferencia: 'Cambio de equipo', reinsertada: 'Reinsertada', nueva: 'SIM nueva' }[kind] || kind;
-}
-
-async function loadMovements() {
-  try {
-    const { data } = await api.get('/sims/movimientos/', { params: { dias: movementsDays.value } });
-    movements.value = data.eventos || [];
-    movementsTransfers.value = data.transferencias || 0;
-  } catch (error) {
-    console.warn('No fue posible cargar los cambios recientes de SIM:', error);
-    movements.value = [];
-    movementsTransfers.value = 0;
-  }
+  return new Date(value).toLocaleString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function resetHistory() {
@@ -1647,20 +1610,4 @@ onBeforeUnmount(() => {
 .history-usage { text-align: right; white-space: nowrap; }
 .history-usage b { color: #121A2B; font-size: 0.86rem; }
 
-/* ---- Cambios recientes ---- */
-.movements-panel { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #DCE3EE; border-radius: 8px; background: #fff; }
-.movements-panel summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
-.movements-panel summary::-webkit-details-marker { display: none; }
-.movements-title { color: #121A2B; font-weight: 700; font-size: 0.92rem; }
-.movements-title small { color: #5B6B82; font-weight: 500; }
-.movements-badge { padding: 3px 10px; border-radius: 999px; background: #EEF2F7; color: #5B6B82; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
-.movements-badge.alert { background: #FEF0C7; color: #B54708; }
-.movements-list { list-style: none; margin: 10px 0 0; padding: 0; }
-.movements-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #EEF2F7; font-size: 0.84rem; color: #121A2B; }
-.movement-tag { flex: none; padding: 2px 8px; border-radius: 999px; background: #EEF2F7; color: #5B6B82; font-size: 0.7rem; font-weight: 700; }
-.movements-list li.transferencia .movement-tag { background: #FEF0C7; color: #B54708; }
-.movements-list li.reinsertada .movement-tag { background: #E9EEFA; color: #3A6FB0; }
-.movement-text { flex: 1; min-width: 0; }
-.movements-list small { color: #5B6B82; white-space: nowrap; }
-.movements-more { display: block; margin-top: 8px; color: #5B6B82; }
 </style>
