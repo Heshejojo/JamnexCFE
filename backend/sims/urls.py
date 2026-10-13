@@ -4,7 +4,9 @@ from .views import (
     AsignacionSimDetailAPIView,
     AsignacionSimListCreateAPIView,
     SimDetailAPIView,
+    SimHistorialAPIView,
     SimListCreateAPIView,
+    SimMovimientosAPIView,
     SimTransferConflictActionAPIView,
     SimTransferConflictListAPIView,
 )
@@ -12,6 +14,8 @@ from .views import (
 urlpatterns = [
     path('sims/conflicts/', SimTransferConflictListAPIView.as_view(), name='sims-conflicts-list'),
     path('sims/conflicts/<int:pk>/<str:action>/', SimTransferConflictActionAPIView.as_view(), name='sims-conflicts-action'),
+    path('sims/movimientos/', SimMovimientosAPIView.as_view(), name='sims-movimientos'),
+    path('sims/<int:pk>/historial/', SimHistorialAPIView.as_view(), name='sims-historial'),
     path('asignaciones-sim/', AsignacionSimListCreateAPIView.as_view(), name='asignaciones-sim-list'),
     path('asignaciones-sim/<int:pk>/', AsignacionSimDetailAPIView.as_view(), name='asignaciones-sim-detail'),
     path('sims/', SimListCreateAPIView.as_view(), name='sims-list'),

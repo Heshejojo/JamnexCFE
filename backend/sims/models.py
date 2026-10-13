@@ -49,6 +49,30 @@ class Sim(models.Model):
         super().save(*args, **kwargs)
 
 
+class HistorialSim(models.Model):
+    sim = models.ForeignKey(Sim, on_delete=models.CASCADE, related_name='historial')
+    dispositivo = models.ForeignKey(
+        Dispositivo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historial_sims',
+    )
+    slot = models.IntegerField(null=True, blank=True)
+    desde = models.DateTimeField(auto_now_add=True)
+    hasta = models.DateTimeField(null=True, blank=True)
+    consumo_mb = models.FloatField(default=0)
+    ultimo_reporte = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-desde']
+
+    def __str__(self):
+        return f'{self.sim} en {self.dispositivo or "dispositivo eliminado"}'
+
+
 class SimTransferConflict(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pendiente'

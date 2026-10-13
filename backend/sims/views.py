@@ -1,11 +1,15 @@
+from datetime import timedelta
+
 from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AsignacionSim, Sim, SimTransferConflict
+from consumos.models import Consumo
+from .models import AsignacionSim, HistorialSim, Sim, SimTransferConflict
 from .serializers import (
     AsignacionSimSerializer,
     SimEditSerializer,
@@ -31,6 +35,15 @@ class SimDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return SimEditSerializer
         return SimSerializer
 
+    def perform_destroy(self, instance):
+        HistorialSim.objects.filter(sim=instance, hasta__isnull=True).update(
+            hasta=timezone.now(),
+            updated_at=timezone.now(),
+        )
+        instance.activo = False
+        instance.dispositivo_id = None
+        instance.save(update_fields=['activo', 'dispositivo', 'updated_at'])
+
 
 class SimTransferConflictListAPIView(generics.ListAPIView):
     serializer_class = SimTransferConflictSerializer
@@ -40,6 +53,97 @@ class SimTransferConflictListAPIView(generics.ListAPIView):
         return SimTransferConflict.objects.filter(
             status=SimTransferConflict.Status.TRANSFERRED,
         ).select_related('sim', 'source_device', 'target_device').order_by('-created_at')
+
+
+class SimMovimientosAPIView(APIView):
+    permission_classes = [RolePermission]
+
+    @staticmethod
+    def _device_name(device):
+        if device is None:
+            return 'Dispositivo eliminado'
+        return ' '.join(filter(None, [device.fabricante, device.modelo])) or device.device_uuid or str(device.pk)
+
+    def get(self, request):
+        dias = max(1, int(request.GET.get('dias', 30)))
+        cutoff = timezone.now() - timedelta(days=dias)
+        records = HistorialSim.objects.filter(
+            desde__gte=cutoff,
+        ).select_related('sim', 'dispositivo').order_by('-desde')[:50]
+
+        eventos = []
+        for record in records:
+            previous = HistorialSim.objects.filter(
+                sim=record.sim,
+                desde__lt=record.desde,
+            ).order_by('-desde').first()
+
+            if previous is None:
+                tipo = 'nueva'
+                anterior_nombre = 'Sin historial previo'
+            elif previous.dispositivo_id == record.dispositivo_id:
+                tipo = 'reinsertada'
+                anterior_nombre = self._device_name(previous.dispositivo)
+            else:
+                tipo = 'transferencia'
+                anterior_nombre = self._device_name(previous.dispositivo)
+
+            eventos.append({
+                'id': record.id,
+                'tipo': tipo,
+                'sim_nombre': record.sim.numero_telefonico or record.sim.iccid or f'SIM #{record.sim_id}',
+                'anterior_nombre': anterior_nombre,
+                'dispositivo_nombre': self._device_name(record.dispositivo),
+                'fecha': record.desde.isoformat(),
+            })
+
+        return Response({
+            'eventos': eventos,
+            'transferencias': sum(1 for event in eventos if event['tipo'] == 'transferencia'),
+        })
+
+
+class SimHistorialAPIView(APIView):
+    permission_classes = [RolePermission]
+
+    @staticmethod
+    def _device_name(device):
+        if device is None:
+            return 'Dispositivo eliminado'
+        return ' '.join(filter(None, [device.fabricante, device.modelo])) or device.device_uuid or str(device.pk)
+
+    def get(self, request, pk):
+        sim = get_object_or_404(Sim.objects.select_related('dispositivo'), pk=pk)
+        records = HistorialSim.objects.filter(sim=sim).select_related('dispositivo').order_by('-desde')
+
+        historial = []
+        for record in records:
+            consumo = Consumo.objects.filter(
+                sim=sim,
+                dispositivo=record.dispositivo,
+                periodo='diario',
+                fecha__gte=record.desde,
+            )
+            if record.hasta:
+                consumo = consumo.filter(fecha__lt=record.hasta)
+            consumo_mb = consumo.aggregate(total=Sum('consumo_datos_movil'))['total'] or 0
+
+            historial.append({
+                'id': record.id,
+                'dispositivo': record.dispositivo_id,
+                'dispositivo_nombre': self._device_name(record.dispositivo),
+                'dispositivo_eliminado': record.dispositivo is None,
+                'slot': record.slot,
+                'desde': record.desde.isoformat(),
+                'hasta': record.hasta.isoformat() if record.hasta else None,
+                'actual': record.hasta is None,
+                'consumo_mb': float(consumo_mb),
+            })
+
+        return Response({
+            'historial': historial,
+            'total_dispositivos': len({item['dispositivo'] for item in historial if item['dispositivo'] is not None}),
+        })
 
 
 class SimTransferConflictActionAPIView(APIView):
