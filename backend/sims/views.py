@@ -35,14 +35,16 @@ class SimDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return SimEditSerializer
         return SimSerializer
 
-    def perform_destroy(self, instance):
-        HistorialSim.objects.filter(sim=instance, hasta__isnull=True).update(
-            hasta=timezone.now(),
-            updated_at=timezone.now(),
-        )
-        instance.activo = False
-        instance.dispositivo_id = None
-        instance.save(update_fields=['activo', 'dispositivo', 'updated_at'])
+
+class SimStatusAPIView(APIView):
+    permission_classes = [RolePermission]
+
+    def post(self, request, pk):
+        sim = get_object_or_404(Sim.objects.select_related('dispositivo'), pk=pk)
+        activo = request.data.get('activo', sim.activo)
+        sim.activo = bool(activo)
+        sim.save(update_fields=['activo', 'updated_at'])
+        return Response({'id': sim.id, 'activo': sim.activo})
 
 
 class SimTransferConflictListAPIView(generics.ListAPIView):

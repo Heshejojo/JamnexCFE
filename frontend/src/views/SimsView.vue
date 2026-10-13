@@ -11,7 +11,7 @@
         <span class="sync-state" :class="{ syncing: loading, failed: loadError }">
           <i></i>{{ loadError ? 'Sin conexión' : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
-        <span v-if="selectedSim" class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">{{ selectedSim.activo ? '● En uso' : '● Retirada' }}</span>
+        <span v-if="selectedSim" class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">{{ selectedSim.activo ? '● En uso' : '● Dada de baja' }}</span>
         <button class="primary-btn" :disabled="loading" @click="loadSims">Actualizar</button>
       </div>
     </header>
@@ -98,10 +98,13 @@
             </div>
             <div class="row-actions">
               <span class="status-badge" :class="sim.activo ? 'active' : 'inactive'">
-                {{ sim.activo ? '● En uso' : '● Retirada' }}
+                {{ sim.activo ? '● En uso' : '● Dada de baja' }}
               </span>
               <button class="detail-btn" title="Ver detalles" aria-label="Ver detalles" @click="selectDetail(sim)">Ver detalles</button>
-              <button v-if="sim.activo" class="delete-btn" title="Dar de baja (se conserva el historial)" aria-label="Dar de baja la SIM" @click="deleteSim(sim)">Dar de baja</button>
+              <button class="secondary-btn small-btn" type="button" @click="toggleSimStatus(sim)">
+                {{ sim.activo ? 'Dar de baja' : 'Reactivar' }}
+              </button>
+              <button class="delete-btn" title="Eliminar definitivamente" aria-label="Eliminar la SIM" @click="hardDeleteSim(sim)">Eliminar</button>
             </div>
           </div>
         </div>
@@ -120,7 +123,7 @@
             </div>
             <div class="header-actions">
               <span class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">
-                {{ selectedSim.activo ? 'En uso' : 'Retirada' }}
+                {{ selectedSim.activo ? 'En uso' : 'Dada de baja' }}
               </span>
               <button class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedSim = null">Cerrar</button>
@@ -197,7 +200,7 @@
           </section>
 
           <div class="detail-grid">
-            <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ selectedSim.activo ? 'En uso' : 'Retirada' }}</strong></div>
+            <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ selectedSim.activo ? 'En uso' : 'Dada de baja' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tipo de SIM</span><strong>{{ simType(selectedSim) }}</strong></div>
             <div class="detail-item"><span class="detail-icon">⌖</span><span>País</span><strong>{{ selectedSim.pais || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">♟</span><span>MCC / MNC</span><strong>{{ selectedSim.mcc || 'N/D' }} / {{ selectedSim.mnc || 'N/D' }}</strong></div>
@@ -280,7 +283,7 @@ const statusFilter = ref('all');
 const statusOptions = [
   { value: 'all', label: 'Todas' },
   { value: 'active', label: 'En uso' },
-  { value: 'removed', label: 'Retiradas' },
+  { value: 'removed', label: 'Dadas de baja' },
   { value: 'shared', label: 'Compartidas' },
 ];
 const movements = ref([]);
@@ -585,9 +588,34 @@ function formatDate(dateString) {
   return date.toLocaleString('es-ES');
 }
 
-async function deleteSim(sim) {
+async function toggleSimStatus(sim) {
   const nombre = sim.numero_telefonico || sim.iccid || 'esta SIM';
-  const confirmar = window.confirm(`¿Dar de baja ${nombre}?\n\nSe conservan su historial y su consumo. Si la SIM vuelve a reportarse desde un celular, se reactiva sola.`);
+  const activar = !sim.activo;
+  const confirmar = window.confirm(
+    activar
+      ? `¿Reactivar ${nombre}?\n\nLa SIM volverá a estar disponible para el uso normal.`
+      : `¿Dar de baja ${nombre}?\n\nSe conservará su historial y su consumo. Si la SIM vuelve a reportarse desde un celular, se reactiva sola.`
+  );
+
+  if (!confirmar) return;
+
+  try {
+    await api.post(`/sims/${sim.id}/status/`, { activo: activar });
+    if (selectedSim.value?.id === sim.id) {
+      selectedSim.value = null;
+    }
+    await loadSims();
+  } catch (error) {
+    console.error('Error al cambiar el estado de la SIM:', error);
+    window.alert(`No fue posible ${activar ? 'reactivar' : 'dar de baja'} la SIM.`);
+  }
+}
+
+async function hardDeleteSim(sim) {
+  const nombre = sim.numero_telefonico || sim.iccid || 'esta SIM';
+  const confirmar = window.confirm(
+    `¿Eliminar definitivamente ${nombre}?\n\nEsta acción borra la SIM y su historial asociado. No se puede deshacer.`
+  );
 
   if (!confirmar) return;
 
@@ -598,8 +626,8 @@ async function deleteSim(sim) {
     }
     await loadSims();
   } catch (error) {
-    console.error('Error al dar de baja la SIM:', error);
-    window.alert('No fue posible dar de baja la SIM.');
+    console.error('Error al eliminar la SIM:', error);
+    window.alert('No fue posible eliminar la SIM.');
   }
 }
 

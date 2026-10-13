@@ -151,7 +151,7 @@
                   <strong>{{ sim.numero_telefonico || sim.operador_nombre || 'SIM sin datos' }}</strong>
                   <small>{{ sim.operador_nombre || 'Sin operador' }} · {{ Number.isInteger(sim.slot) ? `Ranura ${sim.slot + 1}` : 'Ranura N/D' }} · {{ sim.esim ? 'eSIM' : 'SIM física' }}</small>
                 </div>
-                <span class="sim-tag" :class="sim.activo ? 'ok' : 'off'">{{ sim.activo ? 'En uso' : 'Retirada' }}</span>
+                <span class="sim-tag" :class="sim.activo ? 'ok' : 'off'">{{ sim.activo ? 'En uso' : 'Dada de baja' }}</span>
                 <span v-if="sim.dispositivos_count > 1" class="sim-tag shared">Usada en {{ sim.dispositivos_count }} equipos</span>
               </li>
             </ul>
