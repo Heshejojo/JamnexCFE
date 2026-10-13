@@ -20,7 +20,7 @@ from usuarios.permissions import RolePermission
 
 
 class SimListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Sim.objects.select_related('operador').all()
+    queryset = Sim.objects.select_related('operador').order_by('-activo', '-updated_at', '-id')
     serializer_class = SimSerializer
     permission_classes = [RolePermission]
 
@@ -41,8 +41,16 @@ class SimStatusAPIView(APIView):
 
     def post(self, request, pk):
         sim = get_object_or_404(Sim.objects.select_related('dispositivo'), pk=pk)
-        activo = request.data.get('activo', sim.activo)
-        sim.activo = bool(activo)
+        if 'activo' not in request.data:
+            activo = sim.activo
+        else:
+            activo = request.data['activo']
+            if not isinstance(activo, bool):
+                return Response(
+                    {'detail': 'El campo activo debe ser verdadero o falso.'},
+                    status=400,
+                )
+        sim.activo = activo
         sim.save(update_fields=['activo', 'updated_at'])
         return Response({'id': sim.id, 'activo': sim.activo})
 

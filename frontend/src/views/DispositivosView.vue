@@ -138,25 +138,6 @@
             </div>
           </div>
 
-          <section class="device-sims" aria-label="SIMs del dispositivo">
-            <div class="device-sims-heading">
-              <strong>SIMs de este dispositivo</strong>
-              <small>{{ getSimReportText(selectedDevice.simCount, selectedDevice) }}</small>
-            </div>
-            <p v-if="!deviceSims(selectedDevice.id).length" class="device-sims-empty">No hay SIMs registradas en este dispositivo.</p>
-            <ul v-else class="device-sims-list">
-              <li v-for="sim in deviceSims(selectedDevice.id)" :key="sim.id" :class="{ removed: !sim.activo }">
-                <span class="sim-dot" :class="sim.activo ? 'on' : 'off'"></span>
-                <div class="sim-line">
-                  <strong>{{ sim.numero_telefonico || sim.operador_nombre || 'SIM sin datos' }}</strong>
-                  <small>{{ sim.operador_nombre || 'Sin operador' }} · {{ Number.isInteger(sim.slot) ? `Ranura ${sim.slot + 1}` : 'Ranura N/D' }} · {{ sim.esim ? 'eSIM' : 'SIM física' }}</small>
-                </div>
-                <span class="sim-tag" :class="sim.activo ? 'ok' : 'off'">{{ sim.activo ? 'En uso' : 'Dada de baja' }}</span>
-                <span v-if="sim.dispositivos_count > 1" class="sim-tag shared">Usada en {{ sim.dispositivos_count }} equipos</span>
-              </li>
-            </ul>
-          </section>
-
           <div class="detail-grid">
             <div class="detail-item"><span class="detail-icon">♧</span><span>Fabricante</span><strong>{{ selectedDevice.fabricante || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">♟</span><span>Android</span><strong>{{ selectedDevice.version_android || 'No disponible' }}</strong></div>
@@ -202,7 +183,6 @@ import api from '../services/api';
 defineOptions({ name: 'DispositivosView' });
 
 const items = ref([]);
-const simsList = ref([]);
 const selectedDevice = ref(null);
 const query = ref('');
 const deviceDetails = ref({});
@@ -326,12 +306,6 @@ function getSimReportText(count, device) {
   return `${count} ${count === 1 ? 'SIM' : 'SIMs'}${when}`;
 }
 
-function deviceSims(deviceId) {
-  return simsList.value
-    .filter((sim) => Number(sim.dispositivo) === Number(deviceId))
-    .sort((a, b) => Number(b.activo) - Number(a.activo) || (a.slot ?? 9) - (b.slot ?? 9));
-}
-
 function getDeviceApps(deviceId) {
   const apps = deviceDetails.value[deviceId]?.apps || [];
   return Array.isArray(apps)
@@ -387,13 +361,6 @@ async function loadData() {
     const devices = Array.isArray(devicesResponse.data)
       ? devicesResponse.data
       : devicesResponse.data?.results || [];
-    try {
-      const simsResponse = await api.get('/sims/');
-      simsList.value = Array.isArray(simsResponse.data) ? simsResponse.data : simsResponse.data?.results || [];
-    } catch (simsError) {
-      console.warn('No fue posible cargar las SIMs de los dispositivos:', simsError);
-      simsList.value = [];
-    }
     items.value = devices.map((device) => ({
       ...device,
       simCount: Number.isInteger(device.sim_count_reported)
@@ -1365,24 +1332,6 @@ h2 {
 
 /* ---- SIMs por dispositivo ---- */
 .sim-report-status.stale { color: #92400e !important; }
-.device-sims { margin: 0 0 16px; padding: 14px; border: 1px solid #DCE3EE; border-radius: 8px; background: #fff; }
-.device-sims-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-.device-sims-heading strong { color: #121A2B; font-size: 0.92rem; }
-.device-sims-heading small, .device-sims-empty { color: #5B6B82; font-size: 0.8rem; margin: 0; }
-.device-sims-list { list-style: none; margin: 0; padding: 0; }
-.device-sims-list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #EEF2F7; }
-.device-sims-list li:first-child { border-top: 0; }
-.device-sims-list li.removed { opacity: 0.7; }
-.sim-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.sim-dot.on { background: #1E9B48; box-shadow: 0 0 0 4px #E6F6EC; }
-.sim-dot.off { background: #CBD5E1; }
-.sim-line { flex: 1; min-width: 0; }
-.sim-line strong { display: block; color: #121A2B; font-size: 0.86rem; }
-.sim-line small { display: block; color: #5B6B82; font-size: 0.75rem; }
-.sim-tag { padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
-.sim-tag.ok { background: #E6F6EC; color: #167A39; }
-.sim-tag.off { background: #EEF2F7; color: #5B6B82; }
-.sim-tag.shared { background: #FEF0C7; color: #B54708; }
 
 .sim-churn { color: #B54708 !important; font-weight: 700; }
 </style>
