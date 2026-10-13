@@ -1,11 +1,3 @@
-back/////////////////////
-DEBUG=True
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=jamnex
-DB_USER=postgres
-DB_PASSWORD=********************************
-ALLOWED_HOSTS=localhost,127.0.0.1,10.14.64.15
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://10.14.64.15:5173
-front//////////////
-VITE_API_BASE_URL=http://10.14.64.15:8000/api
+curl -i -X POST http://10.14.64.15:8000/api/auth/login/ \
+  -H 'Content-Type: application/json' \
+  -d '{"identifier":"admin","password":"Cambia123"}'
