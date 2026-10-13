@@ -1,5 +1,1 @@
-(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ python manage.py shell -c "from usuarios.models import Usuario as U; u=U.objects.get(username='admin'); print(u.check_password('TU_PASS'), u.is_active, u.activo)"
-25 objects imported automatically (use -v 2 for details).
-
-False True True
-(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ 
+grep -E "ALLOWED_HOSTS|CORS_ALLOWED_ORIGINS|CSRF_TRUSTED" .env
