@@ -73,12 +73,12 @@
           </div>
 
           <div
-            v-if="selectedDevice.simCount === 0"
+            v-if="selectedDevice.simCount === 0 && isReportStale(selectedDevice)"
             class="sim-report-alert"
             role="status"
           >
-            <strong>Este móvil no ha enviado datos de ninguna SIM</strong>
-            <span>Puede no tener una SIM instalada o la app no pudo leerla.</span>
+            <strong>Este dispositivo no ha enviado datos de ninguna SIM</strong>
+            <span>No se detecta ninguna SIM desde hace {{ timeAgo(selectedDevice.sims_reported_at) }}. Puede no tener una SIM instalada o la app no pudo leerla.</span>
           </div>
           <div
             v-else-if="selectedDevice.simCount === null"
@@ -97,7 +97,7 @@
             <span>Han pasado {{ selectedDevice.sims_distintas_30d }} SIMs distintas por este equipo en los últimos 30 días. Revisa si se están intercambiando SIMs entre equipos.</span>
           </div>
           <div
-            v-if="selectedDevice.simCount !== null && isReportStale(selectedDevice)"
+            v-if="selectedDevice.simCount !== null && selectedDevice.simCount !== 0 && isReportStale(selectedDevice)"
             class="sim-report-alert unavailable"
             role="status"
           >
@@ -296,13 +296,14 @@ function timeAgo(value) {
 
 function isReportStale(device) {
   if (!device?.sims_reported_at) return false;
-  return Date.now() - new Date(device.sims_reported_at).getTime() > REPORT_STALE_MS;
+  return Date.now() - new Date(device.sims_reported_at).getTime() >= REPORT_STALE_MS;
 }
 
 function getSimReportText(count, device) {
   if (count === null || count === undefined) return 'SIM: sin reporte';
   const when = device?.sims_reported_at ? ` · reportó ${timeAgo(device.sims_reported_at)}` : '';
-  if (count === 0) return `Sin SIM detectada${when}`;
+  if (count === 0 && isReportStale(device)) return `Sin SIM detectada${when}`;
+  if (count === 0) return `Reportó 0 SIMs${when}`;
   return `${count} ${count === 1 ? 'SIM' : 'SIMs'}${when}`;
 }
 
