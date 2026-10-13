@@ -1,8 +1,9 @@
 import hashlib
 import secrets
+from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import authentication, generics, permissions, status
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from bateria.models import RegistroBateria
 from ram.models import RegistroRam
 from almacenamiento.models import RegistroAlmacenamiento
 from redes.models import RegistroRed
+from sims.history import close_missing, register_presence
 from sims.models import Sim, SimTransferConflict, normalize_iccid
 from operadores.models import Operador
 
@@ -163,7 +165,7 @@ class DeviceSimView(APIView):
             )
         sim_defaults = {
             'dispositivo': request.user,
-            'slot': data.get('slot'),
+            'slot': data['slot'] if data.get('slot') is not None and data['slot'] >= 0 else None,
             'mcc': data.get('mcc') or '',
             'mnc': data.get('mnc') or '',
             'operador': operador,
@@ -235,6 +237,7 @@ class DeviceSimView(APIView):
                     resolved_at=resolved_at,
                 )
 
+            register_presence(sim, request.user, sim.slot)
             active_sims = Sim.objects.filter(dispositivo=request.user, activo=True).count()
             if request.user.sim_count_reported is None or request.user.sim_count_reported < active_sims:
                 request.user.sim_count_reported = active_sims
@@ -260,6 +263,7 @@ class DeviceSimStatusView(APIView):
         request.user.sim_count_reported = serializer.validated_data['sim_count']
         request.user.sims_reported_at = reported_at
         request.user.save(update_fields=['sim_count_reported', 'sims_reported_at', 'updated_at'])
+        close_missing(request.user, request.user.sim_count_reported, reported_at)
         return Response({
             'sim_count': request.user.sim_count_reported,
             'reported_at': reported_at,
@@ -402,16 +406,38 @@ class DeviceRevokeView(APIView):
         return Response({'device_id': device.pk, 'revocado': True})
 
 
+def dispositivos_queryset():
+    """Dispositivos con cuantas SIM distintas han tenido en los ultimos 30 dias.
+
+    Sirve aunque el celular no mande el ICCID: cada SIM que entra a un equipo
+    queda registrada, asi que un equipo que cambia mucho de SIM se nota.
+    """
+    cutoff = timezone.now() - timedelta(days=30)
+    return Dispositivo.objects.annotate(
+        sims_distintas_30d=Count(
+            'historial_sims__sim',
+            filter=Q(historial_sims__hasta__isnull=True) | Q(historial_sims__hasta__gte=cutoff),
+            distinct=True,
+        ),
+    ).order_by('id')
+
+
 class DispositivoListCreateAPIView(generics.ListCreateAPIView):
     queryset = Dispositivo.objects.all()
     serializer_class = DispositivoSerializer
     permission_classes = [RolePermission]
+
+    def get_queryset(self):
+        return dispositivos_queryset()
 
 
 class DispositivoDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Dispositivo.objects.all()
     serializer_class = DispositivoSerializer
     permission_classes = [RolePermission]
+
+    def get_queryset(self):
+        return dispositivos_queryset()
 
     def get_serializer_class(self):
         if self.request.method in {'PUT', 'PATCH'}:

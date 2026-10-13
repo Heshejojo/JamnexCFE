@@ -11,7 +11,7 @@
         <span class="sync-state" :class="{ syncing: loading, failed: loadError }">
           <i></i>{{ loadError ? 'Sin conexión' : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
-        <span v-if="selectedSim" class="live-status active">● Activa</span>
+        <span v-if="selectedSim" class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">{{ selectedSim.activo ? '● En uso' : '● Retirada' }}</span>
         <button class="primary-btn" :disabled="loading" @click="loadSims">Actualizar</button>
       </div>
     </header>
@@ -32,6 +32,29 @@
       </article>
     </section>
 
+    <details class="movements-panel" :open="movementsTransfers > 0">
+      <summary>
+        <span class="movements-title">⇄ Cambios recientes de SIM <small>(últimos {{ movementsDays }} días)</small></span>
+        <span class="movements-badge" :class="{ alert: movementsTransfers > 0 }">
+          {{ movementsTransfers }} {{ movementsTransfers === 1 ? 'transferencia' : 'transferencias' }}
+        </span>
+      </summary>
+      <p v-if="!movements.length" class="history-empty">No hay movimientos de SIM en este periodo.</p>
+      <ul v-else class="movements-list">
+        <li v-for="event in movements.slice(0, 12)" :key="event.id" :class="event.tipo">
+          <span class="movement-tag">{{ movementLabel(event.tipo) }}</span>
+          <span class="movement-text">
+            <b>{{ event.sim_nombre }}</b>
+            <template v-if="event.tipo === 'transferencia'"> pasó de <b>{{ event.anterior_nombre }}</b> a <b>{{ event.dispositivo_nombre }}</b></template>
+            <template v-else-if="event.tipo === 'reinsertada'"> volvió a ponerse en <b>{{ event.dispositivo_nombre }}</b></template>
+            <template v-else> apareció en <b>{{ event.dispositivo_nombre }}</b></template>
+          </span>
+          <small>{{ formatShortDate(event.fecha) }}</small>
+        </li>
+      </ul>
+      <small v-if="movements.length > 12" class="movements-more">Mostrando 12 de {{ movements.length }} movimientos.</small>
+    </details>
+
     <div class="sim-layout">
       <section class="panel inventory-panel">
         <div class="panel-topline">
@@ -43,21 +66,42 @@
           <input v-model="query" placeholder="Buscar número, operador, ICCID o UUID" />
         </div>
 
+        <div class="filter-row" role="group" aria-label="Filtrar SIMs">
+          <button
+            v-for="option in statusOptions"
+            :key="option.value"
+            type="button"
+            class="filter-chip"
+            :class="{ on: statusFilter === option.value }"
+            @click="statusFilter = option.value"
+          >{{ option.label }} <b>{{ statusCounts[option.value] }}</b></button>
+        </div>
+
         <div v-if="filteredSims.length" class="list">
           <div v-for="sim in filteredSims" :key="sim.id" class="sim-row" :class="{ active: selectedSim && selectedSim.id === sim.id }">
             <div class="sim-info-block">
               <span class="sim-row-icon">▤</span>
               <strong>{{ sim.numero_telefonico || 'Número no disponible' }}</strong>
-              <small>Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }}</small>
-              <small>Serie: {{ sim.dispositivo_serial || 'No disponible' }}</small>
+              <small>Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }}<template v-if="Number.isInteger(sim.slot)"> · Ranura {{ sim.slot + 1 }}</template></small>
               <small>{{ sim.operador_nombre || 'N/A' }} · {{ sim.iccid || 'Sin ICCID' }}</small>
+              <div class="sim-usage" :title="`Consumo de ${monthLabel}`">
+                <div class="usage-line">
+                  <span>Hoy <b>{{ formatDataAmount(todayUsed(sim)) }}</b></span>
+                  <span>Mes <b>{{ formatDataAmount(monthlyUsed(sim)) }}</b> / {{ formatDataAmount(LIMIT_MB) }}</span>
+                </div>
+                <div class="usage-bar"><i :class="usageLevel(sim)" :style="{ width: usagePercent(sim) + '%' }"></i></div>
+              </div>
+              <div class="sim-chips">
+                <span v-if="sim.dispositivos_count > 1" class="chip shared">⇄ Usada en {{ sim.dispositivos_count }} dispositivos</span>
+                <span class="chip muted">{{ lastReportText(sim) }}</span>
+              </div>
             </div>
             <div class="row-actions">
               <span class="status-badge" :class="sim.activo ? 'active' : 'inactive'">
-                {{ sim.activo ? '● Activa' : '● Inactiva' }}
+                {{ sim.activo ? '● En uso' : '● Retirada' }}
               </span>
               <button class="detail-btn" title="Ver detalles" aria-label="Ver detalles" @click="selectDetail(sim)">Ver detalles</button>
-              <button class="delete-btn" title="Eliminar SIM" aria-label="Eliminar SIM" @click="deleteSim(sim)">Eliminar</button>
+              <button v-if="sim.activo" class="delete-btn" title="Dar de baja (se conserva el historial)" aria-label="Dar de baja la SIM" @click="deleteSim(sim)">Dar de baja</button>
             </div>
           </div>
         </div>
@@ -76,7 +120,7 @@
             </div>
             <div class="header-actions">
               <span class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">
-                {{ selectedSim.activo ? 'Activa' : 'Inactiva' }}
+                {{ selectedSim.activo ? 'En uso' : 'Retirada' }}
               </span>
               <button class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedSim = null">Cerrar</button>
@@ -119,7 +163,7 @@
     <div class="summary-card amber">
       <span class="summary-icon">◷</span>
       <span class="metric-kicker">Consumo mensual / límite</span>
-      <strong>{{ formatDataAmount(monthlyUsed(selectedSim)) }} / 2 GB</strong>
+      <strong>{{ formatDataAmount(monthlyUsed(selectedSim)) }} / {{ formatDataAmount(LIMIT_MB) }}</strong>
     </div>
     <div class="summary-card violet">
       <span class="summary-icon">◎</span>
@@ -129,8 +173,31 @@
   </div>
 </div>
 
+          <section class="history-section" aria-label="Historial de dispositivos">
+            <div class="history-heading">
+              <div><span class="eyebrow">Movimientos</span><strong>Dispositivos donde ha estado esta SIM</strong></div>
+              <span v-if="history.length" class="history-total">{{ historyTotal }} {{ historyTotal === 1 ? 'dispositivo' : 'dispositivos' }}</span>
+            </div>
+            <p v-if="historyTotal > 1" class="history-warning">⚠ Esta SIM ha pasado por {{ historyTotal }} dispositivos. Revisa si se está prestando entre equipos.</p>
+            <p v-if="historyLoading && !history.length" class="history-empty">Cargando historial…</p>
+            <p v-else-if="historyError" class="history-empty">{{ historyError }}</p>
+            <p v-else-if="!history.length" class="history-empty">Aún no hay movimientos registrados para esta SIM.</p>
+            <ol v-else class="history-list">
+              <li v-for="row in history" :key="row.id" :class="{ current: row.actual && selectedSim.activo }">
+                <span class="history-dot"></span>
+                <div class="history-main">
+                  <strong>{{ row.dispositivo_nombre }}<em v-if="row.dispositivo_eliminado"> (dispositivo eliminado)</em></strong>
+                  <small>
+                    {{ formatShortDate(row.desde) }} → {{ row.actual ? (selectedSim.activo ? 'Actualmente' : 'Dada de baja') : formatShortDate(row.hasta) }}<template v-if="Number.isInteger(row.slot)"> · Ranura {{ row.slot + 1 }}</template>
+                  </small>
+                </div>
+                <div class="history-usage"><b>{{ formatDataAmount(row.consumo_mb) }}</b><small>en este equipo</small></div>
+              </li>
+            </ol>
+          </section>
+
           <div class="detail-grid">
-            <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ selectedSim.activo ? 'Activo' : 'Inactivo' }}</strong></div>
+            <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ selectedSim.activo ? 'En uso' : 'Retirada' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tipo de SIM</span><strong>{{ simType(selectedSim) }}</strong></div>
             <div class="detail-item"><span class="detail-icon">⌖</span><span>País</span><strong>{{ selectedSim.pais || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">♟</span><span>MCC / MNC</span><strong>{{ selectedSim.mcc || 'N/D' }} / {{ selectedSim.mnc || 'N/D' }}</strong></div>
@@ -138,6 +205,7 @@
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tecnología</span><strong>{{ selectedSim.tecnologia || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">⌁</span><span>Roaming</span><strong>{{ selectedSim.roaming ? 'Sí' : 'No' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tipo de red</span><strong>{{ selectedSim.tipo_red || 'No disponible' }}</strong></div>
+            <div class="detail-item"><span class="detail-icon">◷</span><span>Último reporte</span><strong>{{ selectedSim.ultimo_reporte ? formatDate(selectedSim.ultimo_reporte) : 'Sin reporte' }}</strong></div>
             
           </div>
 
@@ -207,8 +275,39 @@ const editForm = reactive({ numero_telefonico: '', iccid: '' });
 const transferConflicts = ref([]);
 const transferringConflictIds = ref([]);
 
+const LIMIT_MB = 2048;
+const statusFilter = ref('all');
+const statusOptions = [
+  { value: 'all', label: 'Todas' },
+  { value: 'active', label: 'En uso' },
+  { value: 'removed', label: 'Retiradas' },
+  { value: 'shared', label: 'Compartidas' },
+];
+const movements = ref([]);
+const movementsTransfers = ref(0);
+const movementsDays = ref(30);
+const history = ref([]);
+const historyTotal = ref(0);
+const historyLoading = ref(false);
+const historyError = ref('');
+
+function matchesStatus(sim, filter) {
+  if (filter === 'active') return sim.activo;
+  if (filter === 'removed') return !sim.activo;
+  if (filter === 'shared') return sim.dispositivos_count > 1;
+  return true;
+}
+
+const statusCounts = computed(() => ({
+  all: sims.value.length,
+  active: sims.value.filter((sim) => matchesStatus(sim, 'active')).length,
+  removed: sims.value.filter((sim) => matchesStatus(sim, 'removed')).length,
+  shared: sims.value.filter((sim) => matchesStatus(sim, 'shared')).length,
+}));
+
 const filteredSims = computed(() =>
   sims.value.filter((sim) =>
+    matchesStatus(sim, statusFilter.value) &&
     `${sim.numero_telefonico || ''} ${sim.dispositivo_nombre || ''} ${sim.dispositivo_serial || ''} ${sim.operador_nombre || ''} ${sim.iccid || ''} ${sim.sim_uuid || ''}`
       .toLowerCase()
       .includes(query.value.toLowerCase())
@@ -283,6 +382,9 @@ async function loadSims() {
     selectedSim.value = selectedSim.value
       ? sims.value.find((sim) => sim.id === selectedSim.value.id) || null
       : sims.value[0] || null;
+    if (selectedSim.value) loadHistory(selectedSim.value.id);
+    else resetHistory();
+    loadMovements();
     lastSync.value = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (error) {
     console.error('Error cargando SIMs:', error);
@@ -313,10 +415,92 @@ function formatDataAmount(value) {
   return amount >= 1024 ? `${(amount / 1024).toFixed(2)} GB` : `${amount.toFixed(2)} MB`;
 }
 
+const monthlyTotals = computed(() => {
+  const totals = new Map();
+  for (const item of consumptionRecords.value) {
+    if (item.periodo !== 'diario' || item.sim == null || item.fecha?.slice(0, 7) !== selectedMonth.value) continue;
+    totals.set(item.sim, (totals.get(item.sim) || 0) + Number(item.consumo_datos_movil || 0));
+  }
+  return totals;
+});
+
 function monthlyUsed(sim) {
-  return consumptionRecords.value
-    .filter((item) => item.sim === sim?.id && item.periodo === 'diario' && item.fecha?.slice(0, 7) === selectedMonth.value)
-    .reduce((sum, item) => sum + Number(item.consumo_datos_movil || 0), 0);
+  return monthlyTotals.value.get(sim?.id) || 0;
+}
+
+function usagePercent(sim) {
+  return Math.min(100, Math.round((monthlyUsed(sim) / LIMIT_MB) * 100));
+}
+
+function usageLevel(sim) {
+  const percent = (monthlyUsed(sim) / LIMIT_MB) * 100;
+  if (percent >= 100) return 'over';
+  if (percent >= 80) return 'warn';
+  return 'ok';
+}
+
+function timeAgo(value) {
+  if (!value) return '';
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+  if (minutes < 1) return 'hace un momento';
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  return `hace ${Math.round(hours / 24)} d`;
+}
+
+function lastReportText(sim) {
+  return sim.ultimo_reporte ? `Reportó ${timeAgo(sim.ultimo_reporte)}` : 'Sin reporte del celular';
+}
+
+function formatShortDate(value) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function movementLabel(kind) {
+  return { transferencia: 'Cambio de equipo', reinsertada: 'Reinsertada', nueva: 'SIM nueva' }[kind] || kind;
+}
+
+async function loadMovements() {
+  try {
+    const { data } = await api.get('/sims/movimientos/', { params: { dias: movementsDays.value } });
+    movements.value = data.eventos || [];
+    movementsTransfers.value = data.transferencias || 0;
+  } catch (error) {
+    console.warn('No fue posible cargar los cambios recientes de SIM:', error);
+    movements.value = [];
+    movementsTransfers.value = 0;
+  }
+}
+
+function resetHistory() {
+  history.value = [];
+  historyTotal.value = 0;
+  historyError.value = '';
+}
+
+let historyRequest = 0;
+async function loadHistory(simId) {
+  const request = ++historyRequest;
+  historyLoading.value = true;
+  try {
+    const { data } = await api.get(`/sims/${simId}/historial/`);
+    if (request !== historyRequest) return;
+    history.value = data.historial || [];
+    historyTotal.value = data.total_dispositivos || 0;
+    historyError.value = '';
+  } catch (error) {
+    if (request !== historyRequest) return;
+    console.error('Error cargando historial de la SIM:', error);
+    history.value = [];
+    historyTotal.value = 0;
+    historyError.value = error.response?.status === 404
+      ? 'El servidor aún no ofrece el historial. Actualiza el backend y aplica las migraciones.'
+      : 'No fue posible cargar el historial.';
+  } finally {
+    if (request === historyRequest) historyLoading.value = false;
+  }
 }
 
 function todayUsed(sim) {
@@ -403,7 +587,7 @@ function formatDate(dateString) {
 
 async function deleteSim(sim) {
   const nombre = sim.numero_telefonico || sim.iccid || 'esta SIM';
-  const confirmar = window.confirm(`¿Seguro que deseas eliminar ${nombre}?\n\nEsta acción no se puede deshacer.`);
+  const confirmar = window.confirm(`¿Dar de baja ${nombre}?\n\nSe conservan su historial y su consumo. Si la SIM vuelve a reportarse desde un celular, se reactiva sola.`);
 
   if (!confirmar) return;
 
@@ -414,12 +598,14 @@ async function deleteSim(sim) {
     }
     await loadSims();
   } catch (error) {
-    console.error('Error al eliminar la SIM:', error);
+    console.error('Error al dar de baja la SIM:', error);
+    window.alert('No fue posible dar de baja la SIM.');
   }
 }
 
 function selectDetail(sim) {
   selectedSim.value = sim;
+  loadHistory(sim.id);
 }
 
 let refreshTimer = null;
@@ -1394,4 +1580,59 @@ onBeforeUnmount(() => {
 .status-detail strong {
   color: #121A2B;
 }
+
+/* ---- Consumo, filtros e historial ---- */
+.filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
+.filter-chip { border: 1px solid #DCE3EE; background: #fff; color: #5B6B82; border-radius: 999px; padding: 5px 11px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+.filter-chip b { margin-left: 4px; color: #121A2B; }
+.filter-chip.on { background: #E6F6EC; border-color: #1E9B48; color: #167A39; }
+.filter-chip.on b { color: #167A39; }
+.sim-usage { margin-top: 6px; }
+.usage-line { display: flex; justify-content: space-between; gap: 10px; font-size: 0.78rem; color: #5B6B82; }
+.usage-line b { color: #121A2B; }
+.usage-bar { height: 6px; margin-top: 4px; border-radius: 999px; background: #DCE3EE; overflow: hidden; }
+.usage-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+.usage-bar i.ok { background: #1E9B48; }
+.usage-bar i.warn { background: #F79009; }
+.usage-bar i.over { background: #D92D20; }
+.sim-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+.chip.shared { background: #FEF0C7; color: #B54708; }
+.chip.muted { background: #EEF2F7; color: #5B6B82; font-weight: 600; }
+.sim-row .status-badge.inactive { background: #FEE4E2; color: #B42318; }
+.sim-row { height: auto; }
+.history-section { margin: 16px 0; padding: 14px; border: 1px solid #DCE3EE; border-radius: 8px; background: #fff; }
+.history-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.history-heading strong { display: block; color: #121A2B; font-size: 0.92rem; }
+.history-total { padding: 3px 10px; border-radius: 999px; background: #E9EEFA; color: #3A6FB0; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.history-warning { margin: 0 0 10px; padding: 8px 10px; border-radius: 6px; background: #FEF0C7; color: #B54708; font-size: 0.8rem; font-weight: 600; }
+.history-empty { margin: 0; color: #5B6B82; font-size: 0.85rem; }
+.history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 280px; overflow-y: auto; }
+.history-list li { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 0 10px 22px; border-top: 1px solid #EEF2F7; }
+.history-list li:first-child { border-top: 0; }
+.history-dot { position: absolute; left: 4px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: #CBD5E1; }
+.history-list li.current .history-dot { background: #1E9B48; box-shadow: 0 0 0 4px #E6F6EC; }
+.history-main { flex: 1; min-width: 0; }
+.history-main strong { display: block; color: #121A2B; font-size: 0.86rem; }
+.history-main strong em { font-style: normal; font-weight: 500; color: #B42318; }
+.history-main small, .history-usage small { display: block; color: #5B6B82; font-size: 0.75rem; }
+.history-usage { text-align: right; white-space: nowrap; }
+.history-usage b { color: #121A2B; font-size: 0.86rem; }
+
+/* ---- Cambios recientes ---- */
+.movements-panel { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #DCE3EE; border-radius: 8px; background: #fff; }
+.movements-panel summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.movements-panel summary::-webkit-details-marker { display: none; }
+.movements-title { color: #121A2B; font-weight: 700; font-size: 0.92rem; }
+.movements-title small { color: #5B6B82; font-weight: 500; }
+.movements-badge { padding: 3px 10px; border-radius: 999px; background: #EEF2F7; color: #5B6B82; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.movements-badge.alert { background: #FEF0C7; color: #B54708; }
+.movements-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.movements-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #EEF2F7; font-size: 0.84rem; color: #121A2B; }
+.movement-tag { flex: none; padding: 2px 8px; border-radius: 999px; background: #EEF2F7; color: #5B6B82; font-size: 0.7rem; font-weight: 700; }
+.movements-list li.transferencia .movement-tag { background: #FEF0C7; color: #B54708; }
+.movements-list li.reinsertada .movement-tag { background: #E9EEFA; color: #3A6FB0; }
+.movement-text { flex: 1; min-width: 0; }
+.movements-list small { color: #5B6B82; white-space: nowrap; }
+.movements-more { display: block; margin-top: 8px; color: #5B6B82; }
 </style>

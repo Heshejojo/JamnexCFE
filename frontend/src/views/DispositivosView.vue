@@ -31,12 +31,12 @@
               <strong>{{ item.modelo || item.device_uuid }}</strong>
               <small>{{ item.fabricante || 'Sin info' }} · {{ item.serial || 'Sin número de serie' }}</small>
               <small
-                v-if="item.simCount !== 1"
                 class="sim-report-status"
-                :class="{ missing: item.simCount === 0, unknown: item.simCount === null }"
+                :class="{ missing: item.simCount === 0, unknown: item.simCount === null, stale: isReportStale(item) }"
               >
-                {{ getSimReportText(item.simCount) }}
+                {{ getSimReportText(item.simCount, item) }}
               </small>
+              <small v-if="hasManySimChanges(item)" class="sim-churn">⚠ {{ item.sims_distintas_30d }} SIMs distintas en 30 días</small>
             </div>
             <div class="row-actions">
               <span class="status-badge" :class="item.en_linea ? 'active' : 'inactive'">
@@ -88,9 +88,21 @@
             <strong>Este móvil aún no ha reportado sus SIM</strong>
             <span>La app debe sincronizarse para confirmar si tiene una SIM instalada.</span>
           </div>
-          <div v-else-if="selectedDevice.simCount === 2" class="sim-report-ok" role="status">
-            <strong>Atencion se recibieron datos de dos SIMs</strong>
-            <span>Dos líneas están registradas en este dispositivo.</span>
+          <div v-else-if="selectedDevice.simCount >= 2" class="sim-report-ok" role="status">
+            <strong>Atención: se recibieron datos de {{ selectedDevice.simCount }} SIMs</strong>
+            <span>{{ selectedDevice.simCount }} líneas están registradas en este dispositivo.</span>
+          </div>
+          <div v-if="hasManySimChanges(selectedDevice)" class="sim-report-alert" role="status">
+            <strong>Este dispositivo ha cambiado de SIM varias veces</strong>
+            <span>Han pasado {{ selectedDevice.sims_distintas_30d }} SIMs distintas por este equipo en los últimos 30 días. Revisa si se están intercambiando SIMs entre equipos.</span>
+          </div>
+          <div
+            v-if="selectedDevice.simCount !== null && isReportStale(selectedDevice)"
+            class="sim-report-alert unavailable"
+            role="status"
+          >
+            <strong>El reporte de SIM está desactualizado</strong>
+            <span>El último reporte fue {{ timeAgo(selectedDevice.sims_reported_at) }}. La app puede estar cerrada o sin conexión.</span>
           </div>
 
           <div class="device-summary">
@@ -125,6 +137,25 @@
               </div>
             </div>
           </div>
+
+          <section class="device-sims" aria-label="SIMs del dispositivo">
+            <div class="device-sims-heading">
+              <strong>SIMs de este dispositivo</strong>
+              <small>{{ getSimReportText(selectedDevice.simCount, selectedDevice) }}</small>
+            </div>
+            <p v-if="!deviceSims(selectedDevice.id).length" class="device-sims-empty">No hay SIMs registradas en este dispositivo.</p>
+            <ul v-else class="device-sims-list">
+              <li v-for="sim in deviceSims(selectedDevice.id)" :key="sim.id" :class="{ removed: !sim.activo }">
+                <span class="sim-dot" :class="sim.activo ? 'on' : 'off'"></span>
+                <div class="sim-line">
+                  <strong>{{ sim.numero_telefonico || sim.operador_nombre || 'SIM sin datos' }}</strong>
+                  <small>{{ sim.operador_nombre || 'Sin operador' }} · {{ Number.isInteger(sim.slot) ? `Ranura ${sim.slot + 1}` : 'Ranura N/D' }} · {{ sim.esim ? 'eSIM' : 'SIM física' }}</small>
+                </div>
+                <span class="sim-tag" :class="sim.activo ? 'ok' : 'off'">{{ sim.activo ? 'En uso' : 'Retirada' }}</span>
+                <span v-if="sim.dispositivos_count > 1" class="sim-tag shared">Usada en {{ sim.dispositivos_count }} equipos</span>
+              </li>
+            </ul>
+          </section>
 
           <div class="detail-grid">
             <div class="detail-item"><span class="detail-icon">♧</span><span>Fabricante</span><strong>{{ selectedDevice.fabricante || 'No disponible' }}</strong></div>
@@ -171,6 +202,7 @@ import api from '../services/api';
 defineOptions({ name: 'DispositivosView' });
 
 const items = ref([]);
+const simsList = ref([]);
 const selectedDevice = ref(null);
 const query = ref('');
 const deviceDetails = ref({});
@@ -264,11 +296,40 @@ function getNetworkText(deviceId) {
   return network.tipo_conexion === 'WIFI' ? 'Wi‑Fi' : network.tipo_conexion === 'DATOS_MOVILES' ? 'Datos móviles' : 'Sin conexión';
 }
 
-function getSimReportText(count) {
-  if (count === null) return 'SIM: sin reporte';
-  if (count === 0) return 'Sin SIM detectada';
-  if (count === 2) return '2 SIM reportadas';
-  return `${count} SIM reportadas`;
+const REPORT_STALE_MS = 72 * 60 * 60 * 1000;
+// Un celular de doble SIM puede tener 2 sin problema; desde 3 distintas en 30 días se marca.
+const SIM_CHANGE_ALERT = 3;
+
+function hasManySimChanges(device) {
+  return Number(device?.sims_distintas_30d || 0) >= SIM_CHANGE_ALERT;
+}
+
+function timeAgo(value) {
+  if (!value) return 'nunca';
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+  if (minutes < 1) return 'hace un momento';
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  return `hace ${Math.round(hours / 24)} d`;
+}
+
+function isReportStale(device) {
+  if (!device?.sims_reported_at) return false;
+  return Date.now() - new Date(device.sims_reported_at).getTime() > REPORT_STALE_MS;
+}
+
+function getSimReportText(count, device) {
+  if (count === null || count === undefined) return 'SIM: sin reporte';
+  const when = device?.sims_reported_at ? ` · reportó ${timeAgo(device.sims_reported_at)}` : '';
+  if (count === 0) return `Sin SIM detectada${when}`;
+  return `${count} ${count === 1 ? 'SIM' : 'SIMs'}${when}`;
+}
+
+function deviceSims(deviceId) {
+  return simsList.value
+    .filter((sim) => Number(sim.dispositivo) === Number(deviceId))
+    .sort((a, b) => Number(b.activo) - Number(a.activo) || (a.slot ?? 9) - (b.slot ?? 9));
 }
 
 function getDeviceApps(deviceId) {
@@ -326,6 +387,13 @@ async function loadData() {
     const devices = Array.isArray(devicesResponse.data)
       ? devicesResponse.data
       : devicesResponse.data?.results || [];
+    try {
+      const simsResponse = await api.get('/sims/');
+      simsList.value = Array.isArray(simsResponse.data) ? simsResponse.data : simsResponse.data?.results || [];
+    } catch (simsError) {
+      console.warn('No fue posible cargar las SIMs de los dispositivos:', simsError);
+      simsList.value = [];
+    }
     items.value = devices.map((device) => ({
       ...device,
       simCount: Number.isInteger(device.sim_count_reported)
@@ -384,7 +452,7 @@ async function saveEdit() {
 
 async function deleteDevice(item) {
   const nombre = item.modelo || item.device_uuid || 'este dispositivo';
-  const confirmar = window.confirm(`¿Seguro que deseas eliminar ${nombre}?\n\nEsta acción no se puede deshacer.`);
+  const confirmar = window.confirm(`¿Seguro que deseas eliminar ${nombre}?\n\nSe borrarán también sus registros de batería, RAM, almacenamiento, red y consumo. Las SIMs que tuvo se conservan, con su historial.\n\nEsta acción no se puede deshacer.`);
 
   if (!confirmar) return;
 
@@ -1294,4 +1362,27 @@ h2 {
 .status-detail strong {
   color: #121A2B;
 }
+
+/* ---- SIMs por dispositivo ---- */
+.sim-report-status.stale { color: #92400e !important; }
+.device-sims { margin: 0 0 16px; padding: 14px; border: 1px solid #DCE3EE; border-radius: 8px; background: #fff; }
+.device-sims-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.device-sims-heading strong { color: #121A2B; font-size: 0.92rem; }
+.device-sims-heading small, .device-sims-empty { color: #5B6B82; font-size: 0.8rem; margin: 0; }
+.device-sims-list { list-style: none; margin: 0; padding: 0; }
+.device-sims-list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #EEF2F7; }
+.device-sims-list li:first-child { border-top: 0; }
+.device-sims-list li.removed { opacity: 0.7; }
+.sim-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.sim-dot.on { background: #1E9B48; box-shadow: 0 0 0 4px #E6F6EC; }
+.sim-dot.off { background: #CBD5E1; }
+.sim-line { flex: 1; min-width: 0; }
+.sim-line strong { display: block; color: #121A2B; font-size: 0.86rem; }
+.sim-line small { display: block; color: #5B6B82; font-size: 0.75rem; }
+.sim-tag { padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+.sim-tag.ok { background: #E6F6EC; color: #167A39; }
+.sim-tag.off { background: #EEF2F7; color: #5B6B82; }
+.sim-tag.shared { background: #FEF0C7; color: #B54708; }
+
+.sim-churn { color: #B54708 !important; font-weight: 700; }
 </style>
