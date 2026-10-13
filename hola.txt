@@ -1,3 +1,1 @@
-cd ~/JamnexCFE/backend
-source venv/bin/activate
-python manage.py shell -c "from django.contrib.auth import get_user_model as g; u=g().objects.get(username='admin'); u.set_password('LA_QUE_QUIERAS'); u.is_active=True; u.activo=True; u.save()"
+python manage.py shell -c "from usuarios.models import Usuario as U; u=U.objects.get(username='admin'); print(u.check_password('TU_PASS'), u.is_active, u.activo)"
