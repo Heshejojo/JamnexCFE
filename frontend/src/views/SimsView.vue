@@ -59,7 +59,11 @@
             <div class="sim-info-block">
               <span class="sim-row-icon">▤</span>
               <strong>{{ sim.numero_telefonico || 'Número no disponible' }}</strong>
-              <small>Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }}<template v-if="Number.isInteger(sim.slot)"> · Ranura {{ sim.slot + 1 }}</template></small>
+              <small>
+                Dispositivo: {{ sim.dispositivo_nombre || 'Sin dispositivo asignado' }}
+                <template v-if="Number.isInteger(sim.slot)"> · Ranura {{ sim.slot + 1 }}</template>
+                <template v-else> · Ranura no identificada</template>
+              </small>
               <small>{{ sim.operador_nombre || 'N/A' }} · {{ sim.iccid || 'Sin ICCID' }}</small>
               <div class="sim-usage" :title="`Consumo de ${monthLabel}`">
                 <div class="usage-line">
@@ -163,7 +167,7 @@
             <p v-else-if="historyError" class="history-empty">{{ historyError }}</p>
             <p v-else-if="!history.length" class="history-empty">Aún no hay movimientos registrados para esta SIM.</p>
             <ol v-else class="history-list">
-              <li v-for="row in history" :key="row.id" :class="{ current: row.actual && selectedSim.activo }">
+              <li v-for="row in displayHistory" :key="row.id" :class="{ current: row.actual && selectedSim.activo }">
                 <span class="history-dot"></span>
                 <div class="history-main">
                   <strong>{{ row.dispositivo_nombre }}<em v-if="row.dispositivo_eliminado"> (dispositivo eliminado)</em></strong>
@@ -267,6 +271,27 @@ const history = ref([]);
 const historyTotal = ref(0);
 const historyLoading = ref(false);
 const historyError = ref('');
+
+const displayHistory = computed(() => {
+  const compacted = [];
+  for (const record of history.value) {
+    const previous = compacted[compacted.length - 1];
+    const sameAssignment = previous
+      && previous.dispositivo === record.dispositivo
+      && previous.slot === record.slot;
+
+    if (!sameAssignment) {
+      compacted.push({ ...record });
+      continue;
+    }
+
+    previous.desde = record.desde || previous.desde;
+    previous.hasta = previous.hasta || record.hasta;
+    previous.actual = previous.actual || record.actual;
+    previous.consumo_mb += Number(record.consumo_mb || 0);
+  }
+  return compacted;
+});
 
 function matchesStatus(sim, filter) {
   if (filter === 'active') return sim.activo;
