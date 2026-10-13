@@ -348,7 +348,7 @@ async function loadSims() {
     sims.value = simsList.map((sim) => {
       const device = devices.find((item) => String(item.id) === String(sim.dispositivo));
       const lastSevenDays = Date.now() - (7 * 24 * 60 * 60 * 1000);
-      const simConsumption = consumption.filter((c) => c.sim === sim.id);
+      const simConsumption = consumption.filter((c) => Number(c.sim) === Number(sim.id));
       const dailyConsumption = simConsumption.filter((c) =>
         c.periodo === 'diario' && c.fecha && new Date(c.fecha).getTime() >= lastSevenDays
       );
@@ -420,13 +420,14 @@ const monthlyTotals = computed(() => {
   const totals = new Map();
   for (const item of consumptionRecords.value) {
     if (item.periodo !== 'diario' || item.sim == null || item.fecha?.slice(0, 7) !== selectedMonth.value) continue;
-    totals.set(item.sim, (totals.get(item.sim) || 0) + Number(item.consumo_datos_movil || 0));
+    const simId = Number(item.sim);
+    totals.set(simId, (totals.get(simId) || 0) + Number(item.consumo_datos_movil || 0));
   }
   return totals;
 });
 
 function monthlyUsed(sim) {
-  return monthlyTotals.value.get(sim?.id) || 0;
+  return monthlyTotals.value.get(Number(sim?.id)) || 0;
 }
 
 function usagePercent(sim) {
