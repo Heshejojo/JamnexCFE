@@ -26,9 +26,7 @@ class JamnexApplication : FlutterApplication() {
 			connectivityManager.registerDefaultNetworkCallback(
 				object : ConnectivityManager.NetworkCallback() {
 					override fun onAvailable(network: Network) {
-						val capabilities = connectivityManager.getNetworkCapabilities(network)
-							?: return
-						updateNetworkState(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+						updateNetworkState(isUsableNetwork(connectivityManager.getNetworkCapabilities(network)))
 					}
 
 					override fun onCapabilitiesChanged(
@@ -36,16 +34,16 @@ class JamnexApplication : FlutterApplication() {
 						networkCapabilities: NetworkCapabilities,
 					) {
 						if (connectivityManager.activeNetwork == network) {
-							updateNetworkState(
-								networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
-							)
+							updateNetworkState(isUsableNetwork(networkCapabilities))
 						}
 					}
 
 					override fun onLost(network: Network) {
-						if (connectivityManager.activeNetwork != network) {
-							updateNetworkState(false)
-						}
+						val activeNetwork = connectivityManager.activeNetwork
+						updateNetworkState(
+							activeNetwork != null &&
+								isUsableNetwork(connectivityManager.getNetworkCapabilities(activeNetwork)),
+						)
 					}
 				},
 			)
@@ -53,6 +51,11 @@ class JamnexApplication : FlutterApplication() {
 			Log.e("JamnexApplication", "No se pudo observar la conexión de red", error)
 		}
 	}
+
+	private fun isUsableNetwork(capabilities: NetworkCapabilities?): Boolean =
+		capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+			(Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+				capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
 
 	@Synchronized
 	private fun updateNetworkState(isAvailable: Boolean) {
@@ -75,7 +78,7 @@ class JamnexApplication : FlutterApplication() {
 		try {
 			WorkManager.getInstance(applicationContext).enqueueUniqueWork(
 				"jamnex_network_sync",
-				ExistingWorkPolicy.KEEP,
+				ExistingWorkPolicy.REPLACE,
 				request,
 			)
 		} catch (error: IllegalStateException) {

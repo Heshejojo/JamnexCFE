@@ -146,7 +146,7 @@ class MainActivity : FlutterActivity() {
 					.build()
 				WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
 					"jamnex_background_sync",
-					ExistingPeriodicWorkPolicy.KEEP,
+					ExistingPeriodicWorkPolicy.UPDATE,
 					request,
 				)
 				result.success(null)
