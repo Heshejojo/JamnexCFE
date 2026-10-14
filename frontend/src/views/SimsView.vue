@@ -175,7 +175,6 @@
                     {{ formatShortDate(row.desde) }} → {{ row.actual ? (selectedSim.activo ? 'Actualmente' : 'Dada de baja') : formatShortDate(row.hasta) }}<template v-if="Number.isInteger(row.slot)"> · Ranura {{ row.slot + 1 }}</template>
                   </small>
                 </div>
-                <div class="history-usage"><b>{{ formatDataAmount(row.consumo_mb) }}</b><small>en este equipo</small></div>
               </li>
             </ol>
           </section>
@@ -1632,8 +1631,6 @@ onBeforeUnmount(() => {
 .history-main { flex: 1; min-width: 0; }
 .history-main strong { display: block; color: #121A2B; font-size: 0.86rem; }
 .history-main strong em { font-style: normal; font-weight: 500; color: #B42318; }
-.history-main small, .history-usage small { display: block; color: #5B6B82; font-size: 0.75rem; }
-.history-usage { text-align: right; white-space: nowrap; }
-.history-usage b { color: #121A2B; font-size: 0.86rem; }
+.history-main small { display: block; color: #5B6B82; font-size: 0.75rem; }
 
 </style>
