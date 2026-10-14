@@ -299,6 +299,14 @@ class DeviceConsumptionView(APIView):
             else:
                 sim = Sim.objects.filter(dispositivo=device).order_by('-updated_at').first()
 
+            if sim is None and data['periodo'] == 'diario':
+                active_sims = Sim.objects.filter(
+                    dispositivo=device,
+                    activo=True,
+                )
+                if active_sims.count() == 1:
+                    sim = active_sims.first()
+
             if data['periodo'] != 'diario':
                 consumo = Consumo.objects.filter(
                     dispositivo=device,

@@ -141,27 +141,24 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           'payload': {'sim_count': snapshot.sims.length},
         });
       }
-      if (snapshot.mobileDataMb != null ||
-          snapshot.mobileDataDayMb != null ||
-          snapshot.mobileDataWeekMb != null) {
+      if (snapshot.mobileDataDayMb != null) {
         pendingEvents.add({
           'endpoint': '/device/consumption/',
           'payload': {
-            'consumo_datos_movil':
-                snapshot.mobileDataDayMb ?? snapshot.mobileDataMb ?? 0,
+            'consumo_datos_movil': snapshot.mobileDataDayMb,
             'periodo': 'diario',
             'sim_slot': snapshot.mobileDataSimSlot ?? -1,
           },
         });
-        if (snapshot.mobileDataWeekMb != null) {
-          pendingEvents.add({
-            'endpoint': '/device/consumption/',
-            'payload': {
-              'consumo_datos_movil': snapshot.mobileDataWeekMb,
-              'periodo': 'semanal',
-            },
-          });
-        }
+      }
+      if (snapshot.mobileDataWeekMb != null) {
+        pendingEvents.add({
+          'endpoint': '/device/consumption/',
+          'payload': {
+            'consumo_datos_movil': snapshot.mobileDataWeekMb,
+            'periodo': 'semanal',
+          },
+        });
       }
       await _apiService.registerDevice(devicePayload);
       await _syncProvider.retry((item) async {

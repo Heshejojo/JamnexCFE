@@ -14,7 +14,7 @@ import androidx.work.workDataOf
 import io.flutter.app.FlutterApplication
 
 class JamnexApplication : FlutterApplication() {
-	private var wifiAvailable = false
+	private var networkAvailable = false
 
 	override fun onCreate() {
 		super.onCreate()
@@ -28,7 +28,7 @@ class JamnexApplication : FlutterApplication() {
 					override fun onAvailable(network: Network) {
 						val capabilities = connectivityManager.getNetworkCapabilities(network)
 							?: return
-						updateWifiState(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI))
+						updateNetworkState(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
 					}
 
 					override fun onCapabilitiesChanged(
@@ -36,29 +36,29 @@ class JamnexApplication : FlutterApplication() {
 						networkCapabilities: NetworkCapabilities,
 					) {
 						if (connectivityManager.activeNetwork == network) {
-							updateWifiState(
-								networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
+							updateNetworkState(
+								networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
 							)
 						}
 					}
 
 					override fun onLost(network: Network) {
 						if (connectivityManager.activeNetwork != network) {
-							updateWifiState(false)
+							updateNetworkState(false)
 						}
 					}
 				},
 			)
 		} catch (error: RuntimeException) {
-			Log.e("JamnexApplication", "No se pudo observar la conexión Wi-Fi", error)
+			Log.e("JamnexApplication", "No se pudo observar la conexión de red", error)
 		}
 	}
 
 	@Synchronized
-	private fun updateWifiState(isWifi: Boolean) {
-		val justConnectedToWifi = isWifi && !wifiAvailable
-		wifiAvailable = isWifi
-		if (!justConnectedToWifi) return
+	private fun updateNetworkState(isAvailable: Boolean) {
+		val justConnectedToNetwork = isAvailable && !networkAvailable
+		networkAvailable = isAvailable
+		if (!justConnectedToNetwork) return
 
 		val preferences = getSharedPreferences("JamnexBackgroundSync", Context.MODE_PRIVATE)
 		val baseUrl = preferences.getString("base_url", null)?.trimEnd('/')
@@ -67,19 +67,19 @@ class JamnexApplication : FlutterApplication() {
 		val request = OneTimeWorkRequestBuilder<JamnexSyncWorker>()
 			.setConstraints(
 				Constraints.Builder()
-					.setRequiredNetworkType(androidx.work.NetworkType.UNMETERED)
+					.setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
 					.build(),
 			)
 			.setInputData(workDataOf("base_url" to baseUrl))
 			.build()
 		try {
 			WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-				"jamnex_wifi_sync",
+				"jamnex_network_sync",
 				ExistingWorkPolicy.KEEP,
 				request,
 			)
 		} catch (error: IllegalStateException) {
-			Log.e("JamnexApplication", "No se pudo programar la sincronización Wi-Fi", error)
+			Log.e("JamnexApplication", "No se pudo programar la sincronización de red", error)
 		}
 	}
 }
