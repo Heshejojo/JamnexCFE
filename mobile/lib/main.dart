@@ -236,6 +236,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         ],
       ),
     );
+    await Future<void>.delayed(Duration.zero);
     for (final controller in [
       imei1,
       serial,
