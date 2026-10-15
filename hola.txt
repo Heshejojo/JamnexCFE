@@ -1,3 +1,3 @@
 cd /home/joseluis/JamnexCFE/backend
 source venv/bin/activate
-python manage.py shell -c "from usuarios.models import Usuario; print(list(Usuario.objects.values('id','username','email','activo','is_active')))"
+python manage.py shell -c "from getpass import getpass; from usuarios.models import Usuario; identificador=input('Usuario o correo: ').strip(); u=Usuario.objects.filter(username__iexact=identificador).first() or Usuario.objects.filter(email__iexact=identificador).first(); print('Usuario no encontrado') if not u else (u.set_password(getpass('Nueva contraseña: ')), u.save(update_fields=['password']), print('Contraseña actualizada para', u.username))"
