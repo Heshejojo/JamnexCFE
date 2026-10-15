@@ -1,10 +1,15 @@
-cd /home/joseluis/JamnexCFE/backend
+  GNU nano 8.4                                            /etc/systemd/system/.#jamnex.service189b01717775c7c3                                                     
+[Unit]
+Description=JAMNEX Django Gunicorn
+After=network.target postgresql.service
 
-if grep -q '^CORS_ALLOWED_ORIGINS=' .env; then
-  sed -i 's#^CORS_ALLOWED_ORIGINS=.*#CORS_ALLOWED_ORIGINS=http://10.14.64.15:5173,http://192.168.1.85:5173,http://localhost:5173,http://127.0.0.1:5173#' .env
-else
-  echo 'CORS_ALLOWED_ORIGINS=http://10.14.64.15:5173,http://192.168.1.85:5173,http://localhost:5173,http://127.0.0.1:5173' >> .env
-fi
+[Service]
+User=joseluis
+Group=joseluis
+WorkingDirectory=/home/joseluis/JamnexCFE/backend
+Environment="PATH=/home/joseluis/JamnexCFE/backend/venv/bin"
+ExecStart=/home/joseluis/JamnexCFE/backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 config.wsgi
+Restart=always
 
-sudo systemctl restart jamnex.service
-sudo systemctl status jamnex.service --no-pager -l
+[Install]
+WantedBy=multi-user.target
