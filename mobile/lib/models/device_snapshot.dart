@@ -83,4 +83,46 @@ class DeviceSnapshot {
       'ultimo_contacto': timestamp.toUtc().toIso8601String(),
     };
   }
+
+  DeviceSnapshot copyWith({
+    String? imei1,
+    String? imei2,
+    String? serial,
+    List<Map<String, dynamic>>? sims,
+  }) {
+    return DeviceSnapshot(
+      deviceId: deviceId,
+      fabricante: fabricante,
+      modelo: modelo,
+      versionAndroid: versionAndroid,
+      imei1: imei1 ?? this.imei1,
+      imei2: imei2 ?? this.imei2,
+      serial: serial ?? this.serial,
+      androidSdk: androidSdk,
+      ramTotalMb: ramTotalMb,
+      ramUsedMb: ramUsedMb,
+      ramAvailableMb: ramAvailableMb,
+      almacenamientoTotalMb: almacenamientoTotalMb,
+      almacenamientoUsadoMb: almacenamientoUsadoMb,
+      almacenamientoDisponibleMb: almacenamientoDisponibleMb,
+      batteryPercent: batteryPercent,
+      batteryStatus: batteryStatus,
+      connectionType: connectionType,
+      batteryTemperature: batteryTemperature,
+      mobileDataMb: mobileDataMb,
+      mobileDataDayMb: mobileDataDayMb,
+      mobileDataWeekMb: mobileDataWeekMb,
+      mobileDataSimSlot: mobileDataSimSlot,
+      mobileDataLimitMb: mobileDataLimitMb,
+      networkTechnology: networkTechnology,
+      carrierName: carrierName,
+      carrierId: carrierId,
+      roaming: roaming,
+      simsReadable: simsReadable,
+      applications: applications,
+      sims: sims ?? this.sims,
+      connected: connected,
+      timestamp: timestamp,
+    );
+  }
 }

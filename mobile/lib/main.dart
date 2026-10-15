@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/device_snapshot.dart';
 import 'services/api_service.dart';
@@ -73,6 +76,176 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
     await _collectAndSend();
   }
 
+  Future<DeviceSnapshot> _applyManualSetup(DeviceSnapshot snapshot) async {
+    final preferences = await SharedPreferences.getInstance();
+    final saved = preferences.getString('manual_device_data');
+    final savedSims = preferences.getString('manual_sim_data');
+    if (saved == null && savedSims == null) {
+      final values = await _showManualSetup(snapshot);
+      if (values == null) return snapshot;
+      await preferences.setString(
+          'manual_device_data', jsonEncode(values['device']));
+      await preferences.setString(
+          'manual_sim_data', jsonEncode(values['sims']));
+      return _mergeManualValues(snapshot, values);
+    }
+
+    final device = saved == null
+        ? <String, dynamic>{}
+        : Map<String, dynamic>.from(jsonDecode(saved) as Map);
+    final sims = savedSims == null
+        ? <String, dynamic>{}
+        : Map<String, dynamic>.from(jsonDecode(savedSims) as Map);
+    return _mergeManualValues(snapshot, {'device': device, 'sims': sims});
+  }
+
+  Future<void> _editManualSetup() async {
+    final snapshot = _snapshot;
+    if (snapshot == null) return;
+    final values = await _showManualSetup(snapshot);
+    if (values == null) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(
+        'manual_device_data', jsonEncode(values['device']));
+    await preferences.setString('manual_sim_data', jsonEncode(values['sims']));
+    await _collectAndSend();
+  }
+
+  DeviceSnapshot _mergeManualValues(
+    DeviceSnapshot snapshot,
+    Map<String, dynamic> values,
+  ) {
+    final device = Map<String, dynamic>.from(values['device'] as Map? ?? {});
+    final savedSims = Map<String, dynamic>.from(values['sims'] as Map? ?? {});
+    final sims = snapshot.sims.map((sim) {
+      final slot = sim['slot']?.toString() ?? '';
+      final manual = Map<String, dynamic>.from(savedSims[slot] as Map? ?? {});
+      return {
+        ...sim,
+        if ((manual['iccid'] ?? '').toString().isNotEmpty)
+          'iccid': manual['iccid'],
+      };
+    }).toList();
+    for (final entry in savedSims.entries) {
+      if (sims.any((sim) => sim['slot']?.toString() == entry.key)) continue;
+      final manual = Map<String, dynamic>.from(entry.value as Map);
+      if ((manual['iccid'] ?? '').toString().isEmpty) {
+        continue;
+      }
+      sims.add({
+        'slot': int.tryParse(entry.key),
+        'iccid': manual['iccid'],
+      });
+    }
+    return snapshot.copyWith(
+      imei1: (device['imei1'] ?? '').toString().isNotEmpty
+          ? device['imei1'].toString()
+          : null,
+      imei2: (device['imei2'] ?? '').toString().isNotEmpty
+          ? device['imei2'].toString()
+          : null,
+      serial: (device['serial'] ?? '').toString().isNotEmpty
+          ? device['serial'].toString()
+          : null,
+      sims: sims,
+    );
+  }
+
+  Future<Map<String, dynamic>?> _showManualSetup(
+      DeviceSnapshot snapshot) async {
+    final imei1 = TextEditingController(text: snapshot.imei1 ?? '');
+    final serial = TextEditingController(text: snapshot.serial ?? '');
+    final simControllers = <String, Map<String, TextEditingController>>{};
+    final slots = <String>{'0', '1'};
+    for (final sim in snapshot.sims) {
+      slots.add(sim['slot']?.toString() ?? '${slots.length}');
+    }
+    for (final slot in slots) {
+      final sim = snapshot.sims.cast<Map<String, dynamic>?>().firstWhere(
+            (item) => item?['slot']?.toString() == slot,
+            orElse: () => null,
+          );
+      simControllers[slot] = {
+        'iccid': TextEditingController(text: sim?['iccid']?.toString() ?? ''),
+      };
+    }
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Configura tu dispositivo'),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                    'Estos datos son opcionales. Revisa lo detectado y completa solo lo que falte.'),
+                const SizedBox(height: 16),
+                TextField(
+                    controller: imei1,
+                    decoration: const InputDecoration(labelText: 'IMEI')),
+                TextField(
+                    controller: serial,
+                    decoration:
+                        const InputDecoration(labelText: 'Número de serie')),
+                ...simControllers.entries.map((entry) => Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              'SIM - ranura ${int.tryParse(entry.key) != null ? int.parse(entry.key) + 1 : entry.key}',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          TextField(
+                              controller: entry.value['iccid'],
+                              decoration:
+                                  const InputDecoration(labelText: 'ICCID')),
+                        ],
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop({
+                'device': {
+                  'imei1': imei1.text.trim(),
+                  'serial': serial.text.trim(),
+                },
+                'sims': {
+                  for (final entry in simControllers.entries)
+                    entry.key: {
+                      'iccid': entry.value['iccid']!.text.trim(),
+                    },
+                },
+              });
+            },
+            child: const Text('Guardar y continuar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(null),
+            child: const Text('Omitir'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in [
+      imei1,
+      serial,
+      ...simControllers.values.expand((item) => item.values),
+    ]) {
+      controller.dispose();
+    }
+    return result;
+  }
+
   Future<void> _collectAndSend() async {
     final pendingEvents = <Map<String, dynamic>>[];
     if (mounted) {
@@ -83,12 +256,14 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
     }
 
     try {
-      final snapshot = await _deviceService.collectDeviceSnapshot();
+      var snapshot = await _deviceService.collectDeviceSnapshot();
+      snapshot = await _applyManualSetup(snapshot);
       if (mounted) {
         setState(() {
           _snapshot = snapshot;
         });
       }
+
       final deviceUuid = snapshot.deviceId ??
           'flutter-${DateTime.now().millisecondsSinceEpoch}';
       final devicePayload = snapshot.toBackendPayload()
@@ -329,6 +504,16 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                         label: Text(_isLoading
                             ? 'Sincronizando...'
                             : 'Sincronizar ahora'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton.icon(
+                        onPressed: _isLoading ? null : _editManualSetup,
+                        icon: const Icon(Icons.edit_note_rounded),
+                        label:
+                            const Text('Editar datos del dispositivo y SIMs'),
                       ),
                     ),
                     const SizedBox(height: 18),
