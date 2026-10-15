@@ -1,13 +1,17 @@
 # Backend - Django + DRF
 
-Este directorio será el proyecto Django principal para Agente CFE.
+Este directorio contiene la API y la lógica de persistencia de JamnexCFE.
+La documentación funcional completa está en [`../docs/architecture.md`](../docs/architecture.md)
+y la referencia de endpoints en [`../docs/api-reference.md`](../docs/api-reference.md).
 
-## Objetivo
+## Responsabilidades
 
-- API REST con Django REST Framework
-- Autenticación basada en JWT
-- Registro y administración de usuarios, roles, trabajadores, dispositivos y SIMs
-- Gestión de alertas, reportes y auditoría
+- Autenticación JWT para usuarios del panel.
+- Credenciales separadas para agentes Android.
+- Registro de dispositivos, telemetría y conectividad.
+- Detección, baja, reactivación, transferencia e historial de SIMs.
+- Acumulación diaria de consumo por dispositivo y SIM.
+- Dashboard, exportación Excel y auditoría.
 
 ## Base de datos
 
@@ -25,3 +29,20 @@ python manage.py runserver 0.0.0.0:8000
 ```
 
 El módulo `areas` ya incluye el modelo, la migración `0001_initial`, los endpoints `GET/POST /api/areas/` y `GET/PUT/DELETE /api/areas/<id>/`.
+
+## Apps Django
+
+`usuarios`, `areas`, `trabajadores`, `dispositivos`, `sims`, `consumos`,
+`redes`, `bateria`, `ram`, `almacenamiento`, `operadores`, `reportes` y
+`auditoria` separan cada dominio para que sus modelos, rutas y migraciones
+sean mantenibles de forma independiente.
+
+## Comandos habituales
+
+```powershell
+python manage.py check
+python manage.py makemigrations
+python manage.py migrate
+python manage.py test
+python manage.py runserver
+```

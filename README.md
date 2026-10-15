@@ -64,6 +64,14 @@ JamnexCFE/
 └── .gitignore
 ```
 
+## Documentación técnica
+
+La documentación detallada se divide por tema:
+
+- [Arquitectura y flujo de datos](./docs/architecture.md): responsabilidad de cada aplicación, modelos principales y recorrido de una sincronización.
+- [Referencia de la API](./docs/api-reference.md): endpoints, autenticación, payloads móviles y respuestas principales.
+- [Operación y mantenimiento](./docs/operations.md): instalación, migraciones, compilación, despliegue, diagnóstico y solución de problemas.
+
 ## Componentes principales
 
 ### Backend
@@ -80,6 +88,30 @@ El backend expone la API bajo el prefijo `/api/` y contiene módulos para:
 - Batería, RAM y almacenamiento.
 - Reportes y exportaciones.
 - Auditoría de acciones.
+
+#### Responsabilidad de cada aplicación Django
+
+| Aplicación | Responsabilidad |
+|---|---|
+| `usuarios` | Login JWT, usuarios, roles y permisos administrativos. |
+| `areas` | Catálogo de áreas de trabajo. |
+| `trabajadores` | Personas y asignaciones laborales. |
+| `dispositivos` | Registro del equipo Android, credenciales, telemetría, SIM reportadas y consumo recibido desde el móvil. |
+| `sims` | Líneas SIM, estados, ranuras, transferencias e historial por dispositivo. |
+| `consumos` | Registros diarios/semanales y estado de contadores acumulados por SIM. |
+| `redes` | Historial del tipo de conexión reportado por cada equipo. |
+| `bateria` | Porcentaje, estado y temperatura de batería. |
+| `ram` | Memoria total, disponible y utilizada. |
+| `almacenamiento` | Capacidad y espacio disponible del equipo. |
+| `operadores` | Catálogo de operadores de telefonía. |
+| `reportes` | Resumen del dashboard y exportaciones Excel. |
+| `auditoria` | Registro de acciones administrativas relevantes. |
+
+Cada aplicación sigue el patrón Django de modelos, serializadores, vistas,
+rutas y migraciones. Los serializadores validan la entrada y transforman los
+modelos en JSON; las vistas aplican permisos y ejecutan la lógica; las rutas
+publican los endpoints; y las migraciones versionan los cambios de base de
+datos.
 
 Rutas principales:
 
@@ -123,6 +155,28 @@ La aplicación móvil:
 6. Reporta red, batería, RAM y almacenamiento.
 7. Reintenta eventos pendientes cuando una sincronización falla.
 8. Ejecuta sincronización automática en segundo plano.
+
+#### Flujo de sincronización Android
+
+1. `main.dart` inicia la interfaz Flutter, carga el token local y solicita a
+   Android programar el trabajo periódico.
+2. `DeviceService` obtiene la telemetría disponible y construye un
+   `DeviceSnapshot`.
+3. `ApiService` registra el equipo y envía los eventos desde Flutter cuando la
+   aplicación está abierta.
+4. `JamnexApplication` observa la red predeterminada con
+   `ConnectivityManager`. Cuando detecta una red validada con Internet,
+   programa una sincronización inmediata.
+5. `MainActivity` registra o actualiza el trabajo periódico de
+   `WorkManager`, aproximadamente cada dos horas, usando `NetworkType.CONNECTED`.
+6. `JamnexSyncWorker` ejecuta el envío en segundo plano aunque la pantalla no
+   esté abierta.
+7. Si un envío devuelve error, el worker solicita un reintento. En Flutter,
+   `SyncProvider` conserva eventos pendientes para volver a enviarlos.
+
+La política periódica usa `UPDATE`, de modo que una actualización de la APK
+puede reemplazar las restricciones antiguas de WorkManager. La sincronización
+inmediata usa `REPLACE` para no quedar bloqueada por una tarea anterior.
 
 ## Lógica de SIMs
 
@@ -193,6 +247,24 @@ dispositivo + fecha + SIM
 
 Esto evita mezclar el acumulado de SIM 1 con SIM 2 y permite conservar el
 consumo cuando una SIM cambia de dispositivo.
+
+### Cálculo del delta diario
+
+Android reporta un contador acumulado para el periodo consultado. El backend no
+guarda el contador completo como un nuevo consumo en cada petición. Primero
+consulta `ConsumoSyncState` y calcula:
+
+```text
+delta = contador_actual - ultimo_acumulado
+```
+
+Si el contador actual es menor, se interpreta como reinicio del contador del
+sistema y se usa el valor actual como nuevo delta. El delta positivo se suma al
+registro diario de la combinación `dispositivo + SIM + fecha`.
+
+Los reportes mensuales suman los registros diarios. Por eso el consumo se
+conserva aunque la SIM cambie de equipo y el Excel puede mostrar el detalle de
+cada día.
 
 ## Sincronización automática
 
