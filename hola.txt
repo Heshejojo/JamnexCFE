@@ -1,0 +1,32 @@
+   Active: active (running) since Thu 2026-10-15 12:44:52 CST; 3s ago
+ Invocation: e62a91a01bd84e96ab091b547810cfd3
+   Main PID: 344665 (gunicorn)
+      Tasks: 5 (limit: 9324)
+     Memory: 132.9M (peak: 133.3M)
+        CPU: 1.086s
+     CGroup: /system.slice/jamnex.service
+             ├─344665 /home/joseluis/JamnexCFE/backend/venv/bin/python3 /home/joseluis/JamnexCFE/backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 config.…
+             ├─344667 /home/joseluis/JamnexCFE/backend/venv/bin/python3 /home/joseluis/JamnexCFE/backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 config.…
+             ├─344668 /home/joseluis/JamnexCFE/backend/venv/bin/python3 /home/joseluis/JamnexCFE/backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 config.…
+             └─344669 /home/joseluis/JamnexCFE/backend/venv/bin/python3 /home/joseluis/JamnexCFE/backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 config.…
+
+oct 15 12:44:52 debianpostgresdlspiloto systemd[1]: Started jamnex.service - JAMNEX Django Gunicorn.
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344665]: [2026-10-15 12:44:52 -0600] [344665] [INFO] Starting gunicorn 26.2.0
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344665]: [2026-10-15 12:44:52 -0600] [344665] [INFO] Listening at: http://0.0.0.0:8000 (344665)
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344665]: [2026-10-15 12:44:52 -0600] [344665] [INFO] Using worker: sync
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344667]: [2026-10-15 12:44:52 -0600] [344667] [INFO] Booting worker with pid: 344667
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344668]: [2026-10-15 12:44:52 -0600] [344668] [INFO] Booting worker with pid: 344668
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344669]: [2026-10-15 12:44:52 -0600] [344669] [INFO] Booting worker with pid: 344669
+oct 15 12:44:52 debianpostgresdlspiloto gunicorn[344665]: [2026-10-15 12:44:52 -0600] [344665] [INFO] Control socket listening at /home/joseluis/.gunico…nicorn.ctl
+Hint: Some lines were ellipsized, use -l to show in full.
+(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo journalctl -u gunicorn -n 80 --no-pager
+-- No entries --
+(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo journalctl -u gunicorn -n 80 --no-pager
+-- No entries --
+(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo journalctl -u gunicorn -n 80 --no-pager
+-- No entries --
+(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo systemctl cat gunicorn
+No files found for gunicorn.service.
+(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo systemctl daemon-reload
+(venv) joseluis@debianpostgresdlspiloto:~/JamnexCFE/backend$ sudo systemctl restart gunicorn
+Failed to restart gunicorn.service: Unit gunicorn.service not found.
