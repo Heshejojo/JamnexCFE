@@ -263,7 +263,12 @@ class DeviceSimStatusView(APIView):
         request.user.sim_count_reported = serializer.validated_data['sim_count']
         request.user.sims_reported_at = reported_at
         request.user.save(update_fields=['sim_count_reported', 'sims_reported_at', 'updated_at'])
-        close_missing(request.user, request.user.sim_count_reported, reported_at)
+        close_missing(
+            request.user,
+            request.user.sim_count_reported,
+            reported_at,
+            serializer.validated_data.get('sim_slots'),
+        )
         return Response({
             'sim_count': request.user.sim_count_reported,
             'reported_at': reported_at,

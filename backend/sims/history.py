@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 
-from .models import HistorialSim
+from .models import HistorialSim, Sim
 
 
 def register_presence(sim, dispositivo, slot=None):
@@ -10,6 +10,12 @@ def register_presence(sim, dispositivo, slot=None):
 
     now = timezone.now()
     with transaction.atomic():
+        if slot is not None:
+            HistorialSim.objects.filter(
+                dispositivo=dispositivo,
+                slot=slot,
+                hasta__isnull=True,
+            ).exclude(sim=sim).update(hasta=now, updated_at=now)
         HistorialSim.objects.filter(sim=sim, hasta__isnull=True).exclude(
             dispositivo_id=dispositivo.pk,
         ).update(hasta=now)
@@ -36,7 +42,7 @@ def register_presence(sim, dispositivo, slot=None):
         return record
 
 
-def close_missing(dispositivo, expected_count, reported_at=None):
+def close_missing(dispositivo, expected_count, reported_at=None, reported_slots=None):
     if dispositivo is None:
         return None
 
@@ -46,6 +52,17 @@ def close_missing(dispositivo, expected_count, reported_at=None):
             dispositivo=dispositivo,
             hasta__isnull=True,
         ).order_by('desde')
+
+        if reported_slots is not None:
+            reported_slots = set(reported_slots)
+            missing = records.exclude(slot__in=reported_slots)
+            missing_sim_ids = list(missing.values_list('sim_id', flat=True))
+            missing.update(hasta=reported_at, updated_at=reported_at)
+            Sim.objects.filter(id__in=missing_sim_ids).update(
+                activo=False,
+                updated_at=reported_at,
+            )
+            return missing.count()
 
         if expected_count is None:
             return records.count()

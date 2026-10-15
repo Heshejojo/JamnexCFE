@@ -90,6 +90,11 @@ class DeviceSimSerializer(serializers.Serializer):
 
 class DeviceSimStatusSerializer(serializers.Serializer):
     sim_count = serializers.IntegerField(min_value=0, max_value=10)
+    sim_slots = serializers.ListField(
+        child=serializers.IntegerField(min_value=0, max_value=10),
+        required=False,
+        allow_empty=True,
+    )
 
 
 class AsignacionDispositivoSerializer(serializers.ModelSerializer):

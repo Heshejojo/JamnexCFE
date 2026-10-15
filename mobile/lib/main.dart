@@ -138,7 +138,14 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
       if (snapshot.simsReadable == true) {
         pendingEvents.add({
           'endpoint': '/device/sims/status/',
-          'payload': {'sim_count': snapshot.sims.length},
+          'payload': {
+            'sim_count': snapshot.sims.length,
+            'sim_slots': snapshot.sims
+                .map((sim) => sim['slot'])
+                .whereType<num>()
+                .map((slot) => slot.toInt())
+                .toList(),
+          },
         });
       }
       if (snapshot.mobileDataDayMb != null) {
@@ -546,8 +553,7 @@ class _MonitoringPanel extends StatelessWidget {
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             children: usingMobile
                 ? [
-                    _detail('Consumo hoy',
-                        _formatMb(current?.mobileDataDayMb)),
+                    _detail('Consumo hoy', _formatMb(current?.mobileDataDayMb)),
                     _detail('Últimos 7 días',
                         _formatDataUsage(current?.mobileDataWeekMb)),
                     _detail('Límite', _formatGb(current?.mobileDataLimitMb)),
