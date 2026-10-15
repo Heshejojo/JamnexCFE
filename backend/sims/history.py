@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 
-from .models import HistorialSim, Sim
+from .models import HistorialSim
 
 
 def register_presence(sim, dispositivo, slot=None):
@@ -58,10 +58,6 @@ def close_missing(dispositivo, expected_count, reported_at=None, reported_slots=
             missing = records.exclude(slot__in=reported_slots)
             missing_sim_ids = list(missing.values_list('sim_id', flat=True))
             missing.update(hasta=reported_at, updated_at=reported_at)
-            Sim.objects.filter(id__in=missing_sim_ids).update(
-                activo=False,
-                updated_at=reported_at,
-            )
             return missing.count()
 
         if expected_count is None:

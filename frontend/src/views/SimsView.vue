@@ -11,7 +11,7 @@
         <span class="sync-state" :class="{ syncing: loading, failed: loadError }">
           <i></i>{{ loadError ? 'Sin conexión' : loading ? 'Sincronizando' : `Actualizado ${lastSync}` }}
         </span>
-        <span v-if="selectedSim" class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">{{ selectedSim.activo ? '● En uso' : '● Dada de baja' }}</span>
+        <span v-if="selectedSim" class="live-status" :class="statusClass(selectedSim)">{{ statusLabel(selectedSim, true) }}</span>
         <button class="primary-btn" :disabled="loading" @click="loadSims">Actualizar</button>
       </div>
     </header>
@@ -74,12 +74,11 @@
               </div>
               <div class="sim-chips">
                 <span v-if="sim.dispositivos_count > 1" class="chip shared">⇄ Usada en {{ sim.dispositivos_count }} dispositivos</span>
-                <span class="chip muted">{{ lastReportText(sim) }}</span>
               </div>
             </div>
             <div class="row-actions">
-              <span class="status-badge" :class="sim.activo ? 'active' : 'inactive'">
-                {{ sim.activo ? '● En uso' : '● Dada de baja' }}
+              <span class="status-badge" :class="statusClass(sim)">
+              {{ statusLabel(sim) }}
               </span>
               <button class="detail-btn" title="Ver detalles" aria-label="Ver detalles" @click="selectDetail(sim)">Ver detalles</button>
               <button class="secondary-btn small-btn" type="button" @click="toggleSimStatus(sim)">
@@ -103,8 +102,8 @@
               <h3>{{ selectedSim.numero_telefonico || 'SIM sin número' }}</h3>
             </div>
             <div class="header-actions">
-              <span class="live-status" :class="selectedSim.activo ? 'active' : 'inactive'">
-                {{ selectedSim.activo ? 'En uso' : 'Dada de baja' }}
+              <span class="live-status" :class="statusClass(selectedSim)">
+                {{ statusLabel(selectedSim, true) }}
               </span>
               <button class="secondary-btn" type="button" @click="startEdit">✎ Editar</button>
               <button class="secondary-btn" type="button" @click="selectedSim = null">Cerrar</button>
@@ -180,7 +179,7 @@
           </section>
 
           <div class="detail-grid">
-            <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ selectedSim.activo ? 'En uso' : 'Dada de baja' }}</strong></div>
+            <div class="detail-item"><span class="detail-icon">▤</span><span>Estado de la línea</span><strong>{{ statusLabel(selectedSim) }}</strong></div>
             <div class="detail-item"><span class="detail-icon">▥</span><span>Tipo de SIM</span><strong>{{ simType(selectedSim) }}</strong></div>
             <div class="detail-item"><span class="detail-icon">⌖</span><span>País</span><strong>{{ selectedSim.pais || 'No disponible' }}</strong></div>
             <div class="detail-item"><span class="detail-icon">♟</span><span>MCC / MNC</span><strong>{{ selectedSim.mcc || 'N/D' }} / {{ selectedSim.mnc || 'N/D' }}</strong></div>
@@ -293,10 +292,23 @@ const displayHistory = computed(() => {
 });
 
 function matchesStatus(sim, filter) {
-  if (filter === 'active') return sim.activo;
+  if (filter === 'active') return sim.activo && sim.detectada;
   if (filter === 'removed') return !sim.activo;
   if (filter === 'shared') return sim.dispositivos_count > 1;
   return true;
+}
+
+function statusLabel(sim, withDot = false) {
+  let label = 'Dada de baja';
+  if (sim.activo && sim.detectada) label = 'En uso';
+  else if (sim.activo) label = 'Sin uso';
+  return withDot ? `● ${label}` : label;
+}
+
+function statusClass(sim) {
+  if (sim.activo && sim.detectada) return 'active';
+  if (!sim.activo) return 'inactive';
+  return 'idle';
 }
 
 const statusCounts = computed(() => ({
@@ -1620,6 +1632,7 @@ onBeforeUnmount(() => {
 .chip.shared { background: #FEF0C7; color: #B54708; }
 .chip.muted { background: #EEF2F7; color: #5B6B82; font-weight: 600; }
 .sim-row .status-badge.inactive { background: #FEE4E2; color: #B42318; }
+.sim-row .status-badge.idle { background: #EEF2F7; color: #5B6B82; }
 .sim-row { height: auto; }
 .history-section { margin: 16px 0; padding: 14px; border: 1px solid #DCE3EE; border-radius: 8px; background: #fff; }
 .history-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }

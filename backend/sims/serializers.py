@@ -11,13 +11,27 @@ class SimSerializer(serializers.ModelSerializer):
         allow_null=True,
     )
     operador_nombre = serializers.CharField(source='operador.nombre', read_only=True, allow_null=True)
+    detectada = serializers.SerializerMethodField()
+    ultimo_reporte = serializers.SerializerMethodField()
+    dispositivos_count = serializers.SerializerMethodField()
+
+    def get_detectada(self, obj):
+        return obj.historial.filter(hasta__isnull=True).exists()
+
+    def get_ultimo_reporte(self, obj):
+        record = obj.historial.order_by('-ultimo_reporte', '-desde').first()
+        return record.ultimo_reporte.isoformat() if record and record.ultimo_reporte else None
+
+    def get_dispositivos_count(self, obj):
+        return obj.historial.values('dispositivo_id').distinct().count()
 
     class Meta:
         model = Sim
         fields = [
             'id', 'dispositivo', 'sim_uuid', 'iccid', 'numero_telefonico', 'operador', 'operador_nombre', 'pais', 'mcc', 'mnc',
             'slot', 'carrier_id', 'esim', 'tecnologia', 'roaming', 'estado', 'sim_datos',
-            'fecha_alta', 'activo', 'created_at', 'updated_at'
+            'fecha_alta', 'activo', 'detectada', 'ultimo_reporte', 'dispositivos_count',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 
