@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from django.db import transaction
 
 from operadores.models import Operador
 from .models import AsignacionSim, Sim, SimTransferConflict
+from .models import normalize_iccid
 
 
 class SimSerializer(serializers.ModelSerializer):
@@ -40,6 +42,36 @@ class SimEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sim
         fields = ['iccid', 'numero_telefonico']
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        iccid = validated_data.get('iccid', instance.iccid)
+        normalized = normalize_iccid(iccid)
+        duplicate = (
+            Sim.objects.select_for_update()
+            .filter(iccid_normalized=normalized)
+            .exclude(pk=instance.pk)
+            .first()
+            if normalized
+            else None
+        )
+
+        if duplicate is not None:
+            from consumos.models import Consumo, ConsumoSyncState
+            from redes.models import RegistroRed
+
+            duplicate.historial.all().update(sim=instance)
+            duplicate.transfer_conflicts.all().update(sim=instance)
+            duplicate.asignaciones.all().update(sim=instance)
+            Consumo.objects.filter(sim=duplicate).update(sim=instance)
+            ConsumoSyncState.objects.filter(sim=duplicate).update(sim=instance)
+            RegistroRed.objects.filter(sim=duplicate).update(sim=instance)
+            duplicate.delete()
+
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        return instance
 
 
 class SimTransferConflictSerializer(serializers.ModelSerializer):
