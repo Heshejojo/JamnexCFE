@@ -167,12 +167,12 @@
             <p v-else-if="historyError" class="history-empty">{{ historyError }}</p>
             <p v-else-if="!history.length" class="history-empty">Aún no hay movimientos registrados para esta SIM.</p>
             <ol v-else class="history-list">
-              <li v-for="row in displayHistory" :key="row.id" :class="{ current: row.actual && selectedSim.activo }">
+              <li v-for="row in displayHistory" :key="row.id" :class="{ current: isCurrentHistory(row) }">
                 <span class="history-dot"></span>
                 <div class="history-main">
                   <strong>{{ row.dispositivo_nombre }}<em v-if="row.dispositivo_eliminado"> (dispositivo eliminado)</em></strong>
                   <small>
-                    {{ formatShortDate(row.desde) }} → {{ row.actual ? (selectedSim.activo ? 'Actualmente' : 'Dada de baja') : formatShortDate(row.hasta) }}<template v-if="Number.isInteger(row.slot)"> · Ranura {{ row.slot + 1 }}</template>
+                    {{ formatShortDate(row.desde) }} → {{ isCurrentHistory(row) ? 'Actualmente' : formatShortDate(row.hasta) }}<template v-if="Number.isInteger(row.slot)"> · Ranura {{ row.slot + 1 }}</template>
                   </small>
                 </div>
               </li>
@@ -469,6 +469,10 @@ function resetHistory() {
   history.value = [];
   historyTotal.value = 0;
   historyError.value = '';
+}
+
+function isCurrentHistory(row) {
+  return Boolean(selectedSim.value?.activo === true && row.actual === true);
 }
 
 let historyRequest = 0;
