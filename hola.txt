@@ -1,1 +1,27 @@
-sudo sed -i 's#EnvironmentFile=/home=joseluis/JamnexCFE/backend/.env#EnvironmentFile=/home/joseluis/JamnexCFE/backend/.env#' /etc/systemd/system/jamnex.service
+
+[vite] connecting... client:495:9
+[vite] connected. client:618:15
+GET
+http://10.14.64.15:5174/favicon.ico
+[HTTP/1.1 404 Not Found 0ms]
+
+Campos de contraseña presentes en una página insegura (http://). Esto es un riesgo de seguridad que permite que se roben las credenciales de inicio de sesión de los usuarios.
+login
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://10.14.64.15:8000/api/auth/login/ (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+
+Solicitud de origen cruzado bloqueada: La misma política de origen no permite la lectura de recursos remotos en http://10.14.64.15:8000/api/auth/login/. (Razón: Solicitud CORS sin éxito). Código de estado: (null).
+
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://10.14.64.15:8000/api/auth/login/ (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+
+Solicitud de origen cruzado bloqueada: La misma política de origen no permite la lectura de recursos remotos en http://10.14.64.15:8000/api/auth/login/. (Razón: Solicitud CORS sin éxito). Código de estado: (null).
+
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://10.14.64.15:8000/api/auth/login/ (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+
+Solicitud de origen cruzado bloqueada: La misma política de origen no permite la lectura de recursos remotos en http://10.14.64.15:8000/api/auth/login/. (Razón: Solicitud CORS sin éxito). Código de estado: (null).
+
+Solicitud desde otro origen bloqueada: la política de mismo origen impide leer el recurso remoto en http://10.14.64.15:8000/api/auth/login/ (razón: falta la cabecera CORS 'Access-Control-Allow-Origin'). Código de estado: 200.
+
+Solicitud de origen cruzado bloqueada: La misma política de origen no permite la lectura de recursos remotos en http://10.14.64.15:8000/api/auth/login/. (Razón: Solicitud CORS sin éxito). Código de estado: (null).
+
+​
+
