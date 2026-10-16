@@ -48,12 +48,16 @@ class DeviceService {
         ramTotalMb = _bytesToMb(info.physicalRamSize);
         storageTotalMb = _bytesToMb(info.totalDiskSize);
         try {
-          var simInfo =
-              await _simChannel.invokeMethod<Map<dynamic, dynamic>>('getSimInfo');
-          if (simInfo?['readable'] != true) {
-            await Future<void>.delayed(const Duration(seconds: 2));
+          Map<dynamic, dynamic>? simInfo;
+          for (var attempt = 0; attempt < 4; attempt++) {
             simInfo = await _simChannel
                 .invokeMethod<Map<dynamic, dynamic>>('getSimInfo');
+            final hasSimData = simInfo?['readable'] == true &&
+                (simInfo?['sims'] as List<dynamic>? ?? const []).isNotEmpty;
+            if (hasSimData) break;
+            if (attempt < 3) {
+              await Future<void>.delayed(const Duration(seconds: 1));
+            }
           }
           if (simInfo != null && simInfo['readable'] == true) {
             simsReadable = true;
@@ -68,20 +72,19 @@ class DeviceService {
           simsReadable = false;
         }
         try {
-          telemetry = Map<String, dynamic>.from(
-            await _simChannel
-                    .invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ??
-                {},
-          );
-          if (telemetry['imei_1'] == null &&
-              telemetry['serial'] == null &&
-              telemetry['imei_2'] == null) {
-            await Future<void>.delayed(const Duration(seconds: 1));
+          for (var attempt = 0; attempt < 4; attempt++) {
             telemetry = Map<String, dynamic>.from(
               await _simChannel
                       .invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ??
                   {},
             );
+            final hasDeviceIdentity = telemetry['imei_1'] != null ||
+                telemetry['imei_2'] != null ||
+                telemetry['serial'] != null;
+            if (hasDeviceIdentity) break;
+            if (attempt < 3) {
+              await Future<void>.delayed(const Duration(seconds: 1));
+            }
           }
         } catch (_) {
           telemetry = const {};

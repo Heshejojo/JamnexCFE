@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/device_snapshot.dart';
 import 'services/api_service.dart';
@@ -42,7 +39,6 @@ class DeviceAgentHome extends StatefulWidget {
 }
 
 class _DeviceAgentHomeState extends State<DeviceAgentHome> {
-  static const _manualDataPassword = r'J4mn3x2026$';
   final DeviceService _deviceService = DeviceService();
   final ApiService _apiService = ApiService();
   final SyncProvider _syncProvider = SyncProvider();
@@ -77,245 +73,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
     await _collectAndSend();
   }
 
-  Future<DeviceSnapshot> _applyManualSetup(DeviceSnapshot snapshot) async {
-    final preferences = await SharedPreferences.getInstance();
-    final setupCompleted =
-        preferences.getBool('manual_setup_completed') == true ||
-            preferences.containsKey('manual_device_data') ||
-            preferences.containsKey('manual_sim_data');
-    final saved = preferences.getString('manual_device_data');
-    final savedSims = preferences.getString('manual_sim_data');
-    if (!setupCompleted) {
-      final values = await _showManualSetup(snapshot);
-      if (values == null) {
-        await preferences.setString('manual_device_data', '{}');
-        await preferences.setString('manual_sim_data', '{}');
-        await preferences.setBool('manual_setup_completed', true);
-        await Future<void>.delayed(const Duration(seconds: 2));
-        return _deviceService.collectDeviceSnapshot();
-      }
-      await preferences.setString(
-          'manual_device_data', jsonEncode(values['device']));
-      await preferences.setString(
-          'manual_sim_data', jsonEncode(values['sims']));
-      await preferences.setBool('manual_setup_completed', true);
-      return _mergeManualValues(snapshot, values);
-    }
-
-    final device = saved == null
-        ? <String, dynamic>{}
-        : Map<String, dynamic>.from(jsonDecode(saved) as Map);
-    final sims = savedSims == null
-        ? <String, dynamic>{}
-        : Map<String, dynamic>.from(jsonDecode(savedSims) as Map);
-    return _mergeManualValues(snapshot, {'device': device, 'sims': sims});
-  }
-
-  Future<void> _editManualSetup() async {
-    final snapshot = _snapshot;
-    if (snapshot == null) return;
-    if (!await _requestManualDataPassword()) return;
-    final values = await _showManualSetup(snapshot);
-    if (values == null) return;
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(
-        'manual_device_data', jsonEncode(values['device']));
-    await preferences.setString('manual_sim_data', jsonEncode(values['sims']));
-    await preferences.setBool('manual_setup_completed', true);
-    if (!mounted) return;
-    setState(() {
-      _snapshot = _mergeManualValues(snapshot, values);
-    });
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    await _collectAndSend();
-  }
-
-  Future<bool> _requestManualDataPassword() async {
-    var password = '';
-    var hasError = false;
-    final authorized = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Autorización requerida'),
-          content: TextField(
-            obscureText: true,
-            autofocus: true,
-            onChanged: (value) {
-              password = value;
-              if (hasError) setDialogState(() => hasError = false);
-            },
-            decoration: InputDecoration(
-              labelText: 'Contraseña',
-              errorText: hasError ? 'Contraseña incorrecta' : null,
-            ),
-            onSubmitted: (_) {
-              if (password == _manualDataPassword) {
-                Navigator.of(dialogContext).pop(true);
-              } else {
-                setDialogState(() => hasError = true);
-              }
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (password == _manualDataPassword) {
-                  Navigator.of(dialogContext).pop(true);
-                } else {
-                  setDialogState(() => hasError = true);
-                }
-              },
-              child: const Text('Continuar'),
-            ),
-          ],
-        ),
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
-    return authorized == true;
-  }
-
-  DeviceSnapshot _mergeManualValues(
-    DeviceSnapshot snapshot,
-    Map<String, dynamic> values,
-  ) {
-    final device = Map<String, dynamic>.from(values['device'] as Map? ?? {});
-    final savedSims = Map<String, dynamic>.from(values['sims'] as Map? ?? {});
-    final sims = snapshot.sims.map((sim) {
-      final slot = sim['slot']?.toString() ?? '';
-      final manual = Map<String, dynamic>.from(savedSims[slot] as Map? ?? {});
-      return {
-        ...sim,
-        if ((manual['iccid'] ?? '').toString().isNotEmpty)
-          'iccid': manual['iccid'],
-      };
-    }).toList();
-    for (final entry in savedSims.entries) {
-      if (sims.any((sim) => sim['slot']?.toString() == entry.key)) continue;
-      final manual = Map<String, dynamic>.from(entry.value as Map);
-      if ((manual['iccid'] ?? '').toString().isEmpty) {
-        continue;
-      }
-      sims.add({
-        'slot': int.tryParse(entry.key),
-        'iccid': manual['iccid'],
-      });
-    }
-    return snapshot.copyWith(
-      imei1: (device['imei1'] ?? '').toString().isNotEmpty
-          ? device['imei1'].toString()
-          : null,
-      imei2: (device['imei2'] ?? '').toString().isNotEmpty
-          ? device['imei2'].toString()
-          : null,
-      serial: (device['serial'] ?? '').toString().isNotEmpty
-          ? device['serial'].toString()
-          : null,
-      sims: sims,
-    );
-  }
-
-  Future<Map<String, dynamic>?> _showManualSetup(
-      DeviceSnapshot snapshot) async {
-    final imei1 = TextEditingController(text: snapshot.imei1 ?? '');
-    final serial = TextEditingController(text: snapshot.serial ?? '');
-    final simControllers = <String, Map<String, TextEditingController>>{};
-    final slots = <String>{'0', '1'};
-    for (final sim in snapshot.sims) {
-      slots.add(sim['slot']?.toString() ?? '${slots.length}');
-    }
-    for (final slot in slots) {
-      final sim = snapshot.sims.cast<Map<String, dynamic>?>().firstWhere(
-            (item) => item?['slot']?.toString() == slot,
-            orElse: () => null,
-          );
-      simControllers[slot] = {
-        'iccid': TextEditingController(text: sim?['iccid']?.toString() ?? ''),
-      };
-    }
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Configura tu dispositivo'),
-        content: SizedBox(
-          width: 520,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                    'Estos datos son opcionales. Revisa lo detectado y completa solo lo que falte.'),
-                const SizedBox(height: 16),
-                TextField(
-                    controller: imei1,
-                    decoration: const InputDecoration(labelText: 'IMEI')),
-                TextField(
-                    controller: serial,
-                    decoration:
-                        const InputDecoration(labelText: 'Número de serie')),
-                ...simControllers.entries.map((entry) => Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              'SIM - ranura ${int.tryParse(entry.key) != null ? int.parse(entry.key) + 1 : entry.key}',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                          TextField(
-                              controller: entry.value['iccid'],
-                              decoration:
-                                  const InputDecoration(labelText: 'ICCID')),
-                        ],
-                      ),
-                    )),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop({
-                'device': {
-                  'imei1': imei1.text.trim(),
-                  'serial': serial.text.trim(),
-                },
-                'sims': {
-                  for (final entry in simControllers.entries)
-                    entry.key: {
-                      'iccid': entry.value['iccid']!.text.trim(),
-                    },
-                },
-              });
-            },
-            child: const Text('Guardar y continuar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(null),
-            child: const Text('Omitir'),
-          ),
-        ],
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
-    for (final controller in [
-      imei1,
-      serial,
-      ...simControllers.values.expand((item) => item.values),
-    ]) {
-      controller.dispose();
-    }
-    return result;
-  }
-
   Future<void> _collectAndSend() async {
     final pendingEvents = <Map<String, dynamic>>[];
     if (mounted) {
@@ -326,8 +83,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
     }
 
     try {
-      var snapshot = await _deviceService.collectDeviceSnapshot();
-      snapshot = await _applyManualSetup(snapshot);
+      final snapshot = await _deviceService.collectDeviceSnapshot();
       if (mounted) {
         setState(() {
           _snapshot = snapshot;
@@ -581,16 +337,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
                         label: Text(_isLoading
                             ? 'Sincronizando...'
                             : 'Sincronizar ahora'),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.center,
-                      child: TextButton.icon(
-                        onPressed: _isLoading ? null : _editManualSetup,
-                        icon: const Icon(Icons.edit_note_rounded),
-                        label:
-                            const Text('Editar datos del dispositivo y SIMs'),
                       ),
                     ),
                     const SizedBox(height: 18),

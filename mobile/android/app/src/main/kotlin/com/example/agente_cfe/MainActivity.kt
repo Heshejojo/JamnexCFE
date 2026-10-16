@@ -96,11 +96,30 @@ class MainActivity : FlutterActivity() {
 		}
 	}
 
-	private fun subscriptionIccid(subscription: android.telephony.SubscriptionInfo): String? {
-		return runCatching { subscription.iccId }
-			.getOrNull()
+	private fun validIccid(value: String?): String? {
+		return value
 			?.trim()
 			?.takeIf { it.length in 18..22 && it.all(Char::isDigit) }
+	}
+
+	private fun subscriptionIccid(
+		subscription: android.telephony.SubscriptionInfo,
+		telephonyManager: TelephonyManager,
+	): String? {
+		val direct = runCatching { subscription.iccId }.getOrNull()
+		val bySubscription = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			runCatching {
+				telephonyManager
+					.createForSubscriptionId(subscription.subscriptionId)
+					.simSerialNumber
+			}.getOrNull()
+		} else {
+			null
+		}
+		val defaultSubscription = runCatching { telephonyManager.simSerialNumber }.getOrNull()
+		return validIccid(direct)
+			?: validIccid(bySubscription)
+			?: validIccid(defaultSubscription)
 	}
 
 	private fun getDeviceSerial(): String? {
@@ -203,17 +222,16 @@ class MainActivity : FlutterActivity() {
 					}.distinctBy { it.subscriptionId }
 				}
 				if (subscriptions.isEmpty()) {
-					val telephonyManager =
-						getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-					val hasSim = telephonyManager.simState != TelephonyManager.SIM_STATE_ABSENT
 					result.success(
 						mapOf(
-							"readable" to hasSim,
+							"readable" to true,
 							"sims" to emptyList<Map<String, Any?>>(),
 						),
 					)
 					return@setMethodCallHandler
 				}
+				val telephonyManager =
+					getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 				result.success(mapOf("readable" to true, "sims" to subscriptions.map { subscription ->
 					mapOf(
 						"subscription_id" to subscription.subscriptionId,
@@ -222,7 +240,7 @@ class MainActivity : FlutterActivity() {
 						"pais" to subscription.countryIso,
 						"mcc" to subscriptionMcc(subscription),
 						"mnc" to subscriptionMnc(subscription),
-						"iccid" to subscriptionIccid(subscription),
+						"iccid" to subscriptionIccid(subscription, telephonyManager),
 						"numero" to (runCatching { subscription.number }.getOrNull() ?: fallbackPhoneNumber()),
 						"carrier_id" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) subscription.carrierId else null,
 						"esim" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) subscription.isEmbedded else false,
