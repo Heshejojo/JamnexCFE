@@ -48,8 +48,13 @@ class DeviceService {
         ramTotalMb = _bytesToMb(info.physicalRamSize);
         storageTotalMb = _bytesToMb(info.totalDiskSize);
         try {
-          final simInfo =
+          var simInfo =
               await _simChannel.invokeMethod<Map<dynamic, dynamic>>('getSimInfo');
+          if (simInfo?['readable'] != true) {
+            await Future<void>.delayed(const Duration(seconds: 2));
+            simInfo = await _simChannel
+                .invokeMethod<Map<dynamic, dynamic>>('getSimInfo');
+          }
           if (simInfo != null && simInfo['readable'] == true) {
             simsReadable = true;
             sims = (simInfo['sims'] as List<dynamic>? ?? const [])
@@ -68,6 +73,16 @@ class DeviceService {
                     .invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ??
                 {},
           );
+          if (telemetry['imei_1'] == null &&
+              telemetry['serial'] == null &&
+              telemetry['imei_2'] == null) {
+            await Future<void>.delayed(const Duration(seconds: 1));
+            telemetry = Map<String, dynamic>.from(
+              await _simChannel
+                      .invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ??
+                  {},
+            );
+          }
         } catch (_) {
           telemetry = const {};
         }

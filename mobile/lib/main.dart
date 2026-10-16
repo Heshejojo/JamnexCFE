@@ -42,6 +42,7 @@ class DeviceAgentHome extends StatefulWidget {
 }
 
 class _DeviceAgentHomeState extends State<DeviceAgentHome> {
+  static const _manualDataPassword = r'J4mn3x2026$';
   final DeviceService _deviceService = DeviceService();
   final ApiService _apiService = ApiService();
   final SyncProvider _syncProvider = SyncProvider();
@@ -78,15 +79,26 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
 
   Future<DeviceSnapshot> _applyManualSetup(DeviceSnapshot snapshot) async {
     final preferences = await SharedPreferences.getInstance();
+    final setupCompleted =
+        preferences.getBool('manual_setup_completed') == true ||
+            preferences.containsKey('manual_device_data') ||
+            preferences.containsKey('manual_sim_data');
     final saved = preferences.getString('manual_device_data');
     final savedSims = preferences.getString('manual_sim_data');
-    if (saved == null && savedSims == null) {
+    if (!setupCompleted) {
       final values = await _showManualSetup(snapshot);
-      if (values == null) return snapshot;
+      if (values == null) {
+        await preferences.setString('manual_device_data', '{}');
+        await preferences.setString('manual_sim_data', '{}');
+        await preferences.setBool('manual_setup_completed', true);
+        await Future<void>.delayed(const Duration(seconds: 2));
+        return _deviceService.collectDeviceSnapshot();
+      }
       await preferences.setString(
           'manual_device_data', jsonEncode(values['device']));
       await preferences.setString(
           'manual_sim_data', jsonEncode(values['sims']));
+      await preferences.setBool('manual_setup_completed', true);
       return _mergeManualValues(snapshot, values);
     }
 
@@ -102,13 +114,70 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
   Future<void> _editManualSetup() async {
     final snapshot = _snapshot;
     if (snapshot == null) return;
+    if (!await _requestManualDataPassword()) return;
     final values = await _showManualSetup(snapshot);
     if (values == null) return;
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(
         'manual_device_data', jsonEncode(values['device']));
     await preferences.setString('manual_sim_data', jsonEncode(values['sims']));
+    await preferences.setBool('manual_setup_completed', true);
+    if (!mounted) return;
+    setState(() {
+      _snapshot = _mergeManualValues(snapshot, values);
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     await _collectAndSend();
+  }
+
+  Future<bool> _requestManualDataPassword() async {
+    var password = '';
+    var hasError = false;
+    final authorized = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Autorización requerida'),
+          content: TextField(
+            obscureText: true,
+            autofocus: true,
+            onChanged: (value) {
+              password = value;
+              if (hasError) setDialogState(() => hasError = false);
+            },
+            decoration: InputDecoration(
+              labelText: 'Contraseña',
+              errorText: hasError ? 'Contraseña incorrecta' : null,
+            ),
+            onSubmitted: (_) {
+              if (password == _manualDataPassword) {
+                Navigator.of(dialogContext).pop(true);
+              } else {
+                setDialogState(() => hasError = true);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (password == _manualDataPassword) {
+                  Navigator.of(dialogContext).pop(true);
+                } else {
+                  setDialogState(() => hasError = true);
+                }
+              },
+              child: const Text('Continuar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    return authorized == true;
   }
 
   DeviceSnapshot _mergeManualValues(
@@ -365,6 +434,7 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         });
       }
     } catch (error) {
+      debugPrint('Error al sincronizar datos del dispositivo: $error');
       for (final event in pendingEvents) {
         await _syncProvider.enqueue({
           ...event,
@@ -376,6 +446,12 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
         setState(() {
           _status = 'Error de sincronización';
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'No se pudieron enviar los cambios. Revisa la conexión y vuelve a sincronizar.'),
+          ),
+        );
       }
     } finally {
       if (mounted) {

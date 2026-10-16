@@ -61,9 +61,6 @@ class MainActivity : FlutterActivity() {
 		}
 
 		permissions.add(Manifest.permission.READ_PHONE_STATE)
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			permissions.add(Manifest.permission.READ_PHONE_NUMBERS)
-		}
 
 		return permissions.filter {
 			ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
@@ -97,6 +94,13 @@ class MainActivity : FlutterActivity() {
 		} else {
 			subscription.mnc.takeIf { it > 0 }?.toString()
 		}
+	}
+
+	private fun subscriptionIccid(subscription: android.telephony.SubscriptionInfo): String? {
+		return runCatching { subscription.iccId }
+			.getOrNull()
+			?.trim()
+			?.takeIf { it.length in 18..22 && it.all(Char::isDigit) }
 	}
 
 	private fun getDeviceSerial(): String? {
@@ -186,7 +190,30 @@ class MainActivity : FlutterActivity() {
 			}
 
 			try {
-				val subscriptions = getSystemService(SubscriptionManager::class.java)?.activeSubscriptionInfoList.orEmpty()
+				val subscriptionManager =
+					getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as? SubscriptionManager
+				var subscriptions = subscriptionManager?.activeSubscriptionInfoList.orEmpty()
+				if (subscriptions.isEmpty() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+					val telephonyManager =
+						getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+					subscriptions = (0 until telephonyManager.phoneCount).mapNotNull { slot ->
+						runCatching {
+							subscriptionManager?.getActiveSubscriptionInfoForSimSlotIndex(slot)
+						}.getOrNull()
+					}.distinctBy { it.subscriptionId }
+				}
+				if (subscriptions.isEmpty()) {
+					val telephonyManager =
+						getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+					val hasSim = telephonyManager.simState != TelephonyManager.SIM_STATE_ABSENT
+					result.success(
+						mapOf(
+							"readable" to hasSim,
+							"sims" to emptyList<Map<String, Any?>>(),
+						),
+					)
+					return@setMethodCallHandler
+				}
 				result.success(mapOf("readable" to true, "sims" to subscriptions.map { subscription ->
 					mapOf(
 						"subscription_id" to subscription.subscriptionId,
@@ -195,7 +222,7 @@ class MainActivity : FlutterActivity() {
 						"pais" to subscription.countryIso,
 						"mcc" to subscriptionMcc(subscription),
 						"mnc" to subscriptionMnc(subscription),
-						"iccid" to runCatching { subscription.iccId }.getOrNull(),
+						"iccid" to subscriptionIccid(subscription),
 						"numero" to (runCatching { subscription.number }.getOrNull() ?: fallbackPhoneNumber()),
 						"carrier_id" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) subscription.carrierId else null,
 						"esim" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) subscription.isEmbedded else false,
