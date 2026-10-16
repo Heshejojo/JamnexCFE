@@ -47,6 +47,11 @@ class JamnexApplication : FlutterApplication() {
 					}
 				},
 			)
+			updateNetworkState(
+				isUsableNetwork(
+					connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork),
+				),
+			)
 		} catch (error: RuntimeException) {
 			Log.e("JamnexApplication", "No se pudo observar la conexión de red", error)
 		}

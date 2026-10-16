@@ -152,7 +152,10 @@ class JamnexSyncWorker(
 			token = postDevice(
 				baseUrl,
 				"/device/sims/status/",
-				json("sim_count" to subscriptions.size),
+				json(
+					"sim_count" to subscriptions.size,
+					"sim_slots" to subscriptions.map { it.simSlotIndex },
+				),
 				token,
 				devicePayload,
 				allowNotFound = true,

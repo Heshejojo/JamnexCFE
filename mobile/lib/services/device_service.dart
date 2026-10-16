@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/device_snapshot.dart';
 
@@ -49,13 +50,13 @@ class DeviceService {
         storageTotalMb = _bytesToMb(info.totalDiskSize);
         try {
           Map<dynamic, dynamic>? simInfo;
-          for (var attempt = 0; attempt < 4; attempt++) {
+          for (var attempt = 0; attempt < 8; attempt++) {
             simInfo = await _simChannel
                 .invokeMethod<Map<dynamic, dynamic>>('getSimInfo');
             final hasSimData = simInfo?['readable'] == true &&
                 (simInfo?['sims'] as List<dynamic>? ?? const []).isNotEmpty;
             if (hasSimData) break;
-            if (attempt < 3) {
+            if (attempt < 7) {
               await Future<void>.delayed(const Duration(seconds: 1));
             }
           }
@@ -72,7 +73,7 @@ class DeviceService {
           simsReadable = false;
         }
         try {
-          for (var attempt = 0; attempt < 4; attempt++) {
+          for (var attempt = 0; attempt < 8; attempt++) {
             telemetry = Map<String, dynamic>.from(
               await _simChannel
                       .invokeMethod<Map<dynamic, dynamic>>('getTelemetry') ??
@@ -82,7 +83,7 @@ class DeviceService {
                 telemetry['imei_2'] != null ||
                 telemetry['serial'] != null;
             if (hasDeviceIdentity) break;
-            if (attempt < 3) {
+            if (attempt < 7) {
               await Future<void>.delayed(const Duration(seconds: 1));
             }
           }
@@ -106,8 +107,10 @@ class DeviceService {
     final connected = connectivityResult.isNotEmpty &&
         !connectivityResult.contains(ConnectivityResult.none);
 
+    final stableDeviceId = deviceId ?? await _persistentDeviceId();
+
     return DeviceSnapshot(
-      deviceId: deviceId,
+      deviceId: stableDeviceId,
       fabricante: manufacturer,
       modelo: model,
       versionAndroid: osVersion,
@@ -155,6 +158,18 @@ class DeviceService {
   }
 
   static int? _asInt(dynamic value) => value is num ? value.round() : null;
+
+  Future<String> _persistentDeviceId() async {
+    final preferences = await SharedPreferences.getInstance();
+    const key = 'persistent_device_id';
+    final existing = preferences.getString(key);
+    if (existing != null && existing.isNotEmpty) return existing;
+
+    final generated =
+        'flutter-device-${DateTime.now().microsecondsSinceEpoch}';
+    await preferences.setString(key, generated);
+    return generated;
+  }
 
   static String _mapBatteryState(BatteryState state) {
     switch (state) {
