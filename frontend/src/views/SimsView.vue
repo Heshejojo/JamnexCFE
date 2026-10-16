@@ -55,7 +55,7 @@
         </div>
 
         <div v-if="filteredSims.length" class="list">
-          <div v-for="sim in filteredSims" :key="sim.id" class="sim-row" :class="{ active: selectedSim && selectedSim.id === sim.id }">
+          <div v-for="sim in filteredSims" :key="sim._displayId" class="sim-row" :class="{ active: selectedSim && selectedSim._displayId === sim._displayId }">
             <div class="sim-info-block">
               <span class="sim-row-icon">▤</span>
               <strong>{{ sim.numero_telefonico || 'Número no disponible' }}</strong>
@@ -356,8 +356,14 @@ async function loadSims() {
     transferConflicts.value = asList(conflictsResponse.data);
     consumptionRecords.value = consumption;
 
-    sims.value = simsList.map((sim) => {
+    const rows = [];
+    simsList.forEach((sim) => {
+      const historyDevices = sim.dispositivos_historial?.length
+        ? sim.dispositivos_historial
+        : [{ dispositivo: sim.dispositivo, detectada: sim.detectada }];
+      historyDevices.forEach((historyDevice) => {
       const device = devices.find((item) => String(item.id) === String(sim.dispositivo));
+      const rowDevice = devices.find((item) => String(item.id) === String(historyDevice.dispositivo));
       const lastSevenDays = Date.now() - (7 * 24 * 60 * 60 * 1000);
       const simConsumption = consumption.filter((c) => Number(c.sim) === Number(sim.id));
       const dailyConsumption = simConsumption.filter((c) =>
@@ -377,23 +383,30 @@ async function loadSims() {
         (sum, record) => sum + Number(record.consumo_datos_movil || 0),
         0,
       );
-      return {
+      rows.push({
         ...sim,
-        dispositivo_nombre: device
+        dispositivo: historyDevice.dispositivo,
+        detectada: historyDevice.detectada,
+        dispositivo_nombre: rowDevice
+          ? [rowDevice.fabricante, rowDevice.modelo].filter(Boolean).join(' ') || rowDevice.device_uuid
+          : device
           ? [device.fabricante, device.modelo].filter(Boolean).join(' ') || device.device_uuid
           : '',
-        dispositivo_serial: device?.serial || '',
+        dispositivo_serial: rowDevice?.serial || device?.serial || '',
+        _displayId: `${sim.id}-${historyDevice.dispositivo}`,
         consumo_datos_movil,
         consumo_datos_movil_hoy,
         operador_nombre: sim.operador_nombre || sim.operador?.nombre || (typeof sim.operador === 'string' ? sim.operador : 'N/A'),
         tipo_red: networks
           .filter((network) => network.sim === sim.id)
           .sort((a, b) => new Date(b.fecha_hora || 0) - new Date(a.fecha_hora || 0))[0]?.tipo_conexion || sim.tecnologia || null,
-      };
+      });
+      });
     });
+    sims.value = rows;
 
     selectedSim.value = selectedSim.value
-      ? sims.value.find((sim) => sim.id === selectedSim.value.id) || null
+      ? sims.value.find((sim) => sim._displayId === selectedSim.value._displayId) || null
       : sims.value[0] || null;
     if (selectedSim.value) loadHistory(selectedSim.value.id);
     else resetHistory();

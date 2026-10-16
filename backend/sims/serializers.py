@@ -16,6 +16,7 @@ class SimSerializer(serializers.ModelSerializer):
     detectada = serializers.SerializerMethodField()
     ultimo_reporte = serializers.SerializerMethodField()
     dispositivos_count = serializers.SerializerMethodField()
+    dispositivos_historial = serializers.SerializerMethodField()
 
     def get_detectada(self, obj):
         return obj.historial.filter(hasta__isnull=True).exists()
@@ -27,12 +28,30 @@ class SimSerializer(serializers.ModelSerializer):
     def get_dispositivos_count(self, obj):
         return obj.historial.values('dispositivo_id').distinct().count()
 
+    def get_dispositivos_historial(self, obj):
+        records = obj.historial.values('dispositivo_id', 'hasta')
+        devices = {}
+        for record in records:
+            device_id = record['dispositivo_id']
+            if device_id is None:
+                continue
+            entry = devices.setdefault(device_id, {'dispositivo': device_id, 'detectada': False})
+            if record['hasta'] is None:
+                entry['detectada'] = True
+        if not devices and obj.dispositivo_id is not None:
+            devices[obj.dispositivo_id] = {
+                'dispositivo': obj.dispositivo_id,
+                'detectada': False,
+            }
+        return list(devices.values())
+
     class Meta:
         model = Sim
         fields = [
             'id', 'dispositivo', 'sim_uuid', 'iccid', 'numero_telefonico', 'operador', 'operador_nombre', 'pais', 'mcc', 'mnc',
             'slot', 'carrier_id', 'esim', 'tecnologia', 'roaming', 'estado', 'sim_datos',
             'fecha_alta', 'activo', 'detectada', 'ultimo_reporte', 'dispositivos_count',
+            'dispositivos_historial',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
