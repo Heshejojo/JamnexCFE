@@ -38,11 +38,15 @@ class SimSerializer(serializers.ModelSerializer):
             entry = devices.setdefault(device_id, {'dispositivo': device_id, 'detectada': False})
             if record['hasta'] is None:
                 entry['detectada'] = True
-        if not devices and obj.dispositivo_id is not None:
-            devices[obj.dispositivo_id] = {
-                'dispositivo': obj.dispositivo_id,
-                'detectada': False,
-            }
+        if obj.dispositivo_id is not None:
+            current = devices.setdefault(
+                obj.dispositivo_id,
+                {'dispositivo': obj.dispositivo_id, 'detectada': False},
+            )
+            current['detectada'] = current['detectada'] or obj.historial.filter(
+                dispositivo_id=obj.dispositivo_id,
+                hasta__isnull=True,
+            ).exists()
         return list(devices.values())
 
     class Meta:
