@@ -123,15 +123,19 @@ class MainActivity : FlutterActivity() {
 	}
 
 	private fun getDeviceSerial(): String? {
-		return runCatching {
+		val frameworkSerial = runCatching {
 			when {
 				Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> Build.getSerial()
 				else -> Build.SERIAL
 			}
-		}.getOrNull()
-			?: runCatching {
-				Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
-			}.getOrNull()
+		}.getOrNull()?.trim()?.takeUnless { it.isBlank() || it.equals("unknown", true) }
+		if (frameworkSerial != null) return frameworkSerial
+
+		return runCatching {
+			Runtime.getRuntime().exec(arrayOf("getprop", "ro.serialno")).inputStream
+				.bufferedReader()
+				.use { it.readLine()?.trim() }
+		}.getOrNull()?.takeUnless { it.isNullOrBlank() || it.equals("unknown", true) }
 	}
 
 	override fun onCreate(savedInstanceState: android.os.Bundle?) {
@@ -282,6 +286,10 @@ class MainActivity : FlutterActivity() {
 			?.takeUnless { it == Int.MIN_VALUE }?.div(10.0)
 
 		return mapOf(
+			"device_uuid" to Settings.Secure.getString(
+				contentResolver,
+				Settings.Secure.ANDROID_ID,
+			)?.takeIf { it.isNotBlank() },
 			"ram_total_mb" to bytesToMb(memory.totalMem),
 			"ram_used_mb" to bytesToMb((memory.totalMem - memory.availMem)),
 			"ram_available_mb" to bytesToMb(memory.availMem),

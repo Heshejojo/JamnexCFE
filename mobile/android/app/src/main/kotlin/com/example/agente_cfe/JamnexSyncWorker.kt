@@ -324,12 +324,18 @@ class JamnexSyncWorker(
 		}
 	}
 
-	private fun deviceSerial(): String? = runCatching {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Build.getSerial() else Build.SERIAL
-	}.getOrNull() ?: Settings.Secure.getString(
-		applicationContext.contentResolver,
-		Settings.Secure.ANDROID_ID,
-	)
+	private fun deviceSerial(): String? {
+		val frameworkSerial = runCatching {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Build.getSerial() else Build.SERIAL
+		}.getOrNull()?.trim()?.takeUnless { it.isBlank() || it.equals("unknown", true) }
+		if (frameworkSerial != null) return frameworkSerial
+
+		return runCatching {
+			Runtime.getRuntime().exec(arrayOf("getprop", "ro.serialno")).inputStream
+				.bufferedReader()
+				.use { it.readLine()?.trim() }
+		}.getOrNull()?.takeUnless { it.isNullOrBlank() || it.equals("unknown", true) }
+	}
 
 	private fun imei(telephony: TelephonyManager, slot: Int): String? =
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

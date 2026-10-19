@@ -70,6 +70,9 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           'No se pudo programar la sincronización en segundo plano: $error');
     }
 
+    // Android may finish granting phone permissions after the first frame.
+    // Wait before the first upload so serial, IMEI and SIM data are complete.
+    await Future<void>.delayed(const Duration(minutes: 1));
     await _collectAndSend();
   }
 

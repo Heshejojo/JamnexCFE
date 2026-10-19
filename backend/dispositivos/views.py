@@ -76,7 +76,13 @@ class DeviceRegisterView(APIView):
                 setattr(device, field, value)
             update_fields = [*device_defaults, 'updated_at']
             for field in ('serial', 'imei_1'):
-                if not getattr(device, field) and data.get(field):
+                current_value = getattr(device, field)
+                generic_serial = field == 'serial' and (
+                    not current_value
+                    or current_value.strip().lower() in {'unknown', 'null'}
+                    or current_value == device.device_uuid
+                )
+                if (generic_serial or not current_value) and data.get(field):
                     setattr(device, field, data[field])
                     update_fields.append(field)
             device.save(update_fields=update_fields)

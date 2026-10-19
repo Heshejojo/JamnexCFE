@@ -107,7 +107,14 @@ class DeviceService {
     final connected = connectivityResult.isNotEmpty &&
         !connectivityResult.contains(ConnectivityResult.none);
 
-    final stableDeviceId = deviceId ?? await _persistentDeviceId();
+    final stableDeviceId = telemetry['device_uuid']?.toString().trim().isNotEmpty ==
+            true
+        ? telemetry['device_uuid']!.toString().trim()
+        : deviceId ?? await _persistentDeviceId();
+    final reportedSerial = _usableSerial(
+      telemetry['serial']?.toString(),
+      stableDeviceId,
+    );
 
     return DeviceSnapshot(
       deviceId: stableDeviceId,
@@ -116,7 +123,7 @@ class DeviceService {
       versionAndroid: osVersion,
       imei1: telemetry['imei_1']?.toString(),
       imei2: telemetry['imei_2']?.toString(),
-      serial: telemetry['serial']?.toString() ?? serial,
+      serial: reportedSerial ?? serial,
       androidSdk: androidSdk,
       ramTotalMb: _asInt(telemetry['ram_total_mb']) ?? ramTotalMb,
       ramUsedMb: _asInt(telemetry['ram_used_mb']),
@@ -158,6 +165,18 @@ class DeviceService {
   }
 
   static int? _asInt(dynamic value) => value is num ? value.round() : null;
+
+  static String? _usableSerial(String? value, String? deviceId) {
+    final serial = value?.trim();
+    if (serial == null || serial.isEmpty) return null;
+    if (serial.toLowerCase() == 'unknown' ||
+        serial.toLowerCase() == 'null' ||
+        serial == '000000000000000' ||
+        serial == deviceId) {
+      return null;
+    }
+    return serial;
+  }
 
   Future<String> _persistentDeviceId() async {
     final preferences = await SharedPreferences.getInstance();
