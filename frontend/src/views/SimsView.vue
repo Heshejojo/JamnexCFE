@@ -445,10 +445,19 @@ function formatDataAmount(value) {
 
 const monthlyTotals = computed(() => {
   const totals = new Map();
+  const monthlyRecords = new Map();
   for (const item of consumptionRecords.value) {
-    if (item.periodo !== 'diario' || item.sim == null || item.fecha?.slice(0, 7) !== selectedMonth.value) continue;
+    if (item.sim == null || item.fecha?.slice(0, 7) !== selectedMonth.value) continue;
     const simId = Number(item.sim);
-    totals.set(simId, (totals.get(simId) || 0) + Number(item.consumo_datos_movil || 0));
+    const amount = Number(item.consumo_datos_movil || 0);
+    if (item.periodo === 'mensual') {
+      monthlyRecords.set(simId, amount);
+    } else if (item.periodo === 'diario' && !monthlyRecords.has(simId)) {
+      totals.set(simId, (totals.get(simId) || 0) + amount);
+    }
+  }
+  for (const [simId, amount] of monthlyRecords) {
+    totals.set(simId, amount);
   }
   return totals;
 });
