@@ -319,12 +319,23 @@ class DeviceConsumptionView(APIView):
                     sim = active_sims.first()
 
             if data['periodo'] != 'diario':
-                consumo = Consumo.objects.filter(
+                monthly_report = data['periodo'] == 'mensual'
+                local_date = timezone.localtime(fecha).date()
+                consumption_period = Consumo.objects.filter(
                     dispositivo=device,
                     sim=sim,
                     periodo=data['periodo'],
-                    fecha__date=fecha.date(),
-                ).first()
+                )
+                if monthly_report:
+                    consumption_period = consumption_period.filter(
+                        fecha__year=local_date.year,
+                        fecha__month=local_date.month,
+                    )
+                else:
+                    consumption_period = consumption_period.filter(
+                        fecha__date=local_date,
+                    )
+                consumo = consumption_period.order_by('-fecha', '-pk').first()
                 if consumo:
                     consumo.consumo_datos_movil = mobile_data
                     consumo.consumo_total = total

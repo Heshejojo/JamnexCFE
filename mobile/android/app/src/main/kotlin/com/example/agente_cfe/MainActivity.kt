@@ -318,7 +318,6 @@ class MainActivity : FlutterActivity() {
 			"imei_1" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(0) }.getOrNull() else null,
 			"imei_2" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) runCatching { telephonyManager.getImei(1) }.getOrNull() else null,
 			"mobile_data_day_mb" to queryMobileDataUsage(1),
-			"mobile_data_week_mb" to queryMobileDataUsage(7),
 			"mobile_data_sim_slot" to defaultDataSimSlot(),
 			"mobile_data_limit_mb" to 2048.0,
 			"applications" to visibleApplications(),

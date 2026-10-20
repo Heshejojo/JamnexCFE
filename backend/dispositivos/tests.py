@@ -235,6 +235,34 @@ class DeviceConsumptionMobileOnlyTest(TestCase):
             ).exists()
         )
 
+    def test_monthly_usage_updates_month_to_date_record(self):
+        def report(value):
+            return self.client.post(
+                '/api/device/consumption/',
+                {
+                    'consumo_datos_movil': value,
+                    'periodo': 'mensual',
+                    'sim_slot': 0,
+                },
+                format='json',
+                **self.device_headers,
+            )
+
+        first_response = report(17.86)
+        second_response = report(34.0)
+
+        self.assertEqual(first_response.status_code, 201)
+        self.assertEqual(second_response.status_code, 201)
+        monthly_records = Consumo.objects.filter(
+            dispositivo=self.device,
+            sim=self.sim,
+            periodo='mensual',
+            fecha__year=timezone.now().year,
+            fecha__month=timezone.now().month,
+        )
+        self.assertEqual(monthly_records.count(), 1)
+        self.assertEqual(monthly_records.get().consumo_datos_movil, 34.0)
+
     def test_wifi_network_record_stores_only_connection_status(self):
         response = self.client.post(
             '/api/device/network/',

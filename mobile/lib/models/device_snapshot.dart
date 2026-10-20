@@ -19,7 +19,6 @@ class DeviceSnapshot {
   final double? batteryTemperature;
   final double? mobileDataMb;
   final double? mobileDataDayMb;
-  final double? mobileDataWeekMb;
   final int? mobileDataSimSlot;
   final double? mobileDataLimitMb;
   final String? networkTechnology;
@@ -53,7 +52,6 @@ class DeviceSnapshot {
     this.batteryTemperature,
     this.mobileDataMb,
     this.mobileDataDayMb,
-    this.mobileDataWeekMb,
     this.mobileDataSimSlot,
     this.mobileDataLimitMb,
     this.networkTechnology,
@@ -111,7 +109,6 @@ class DeviceSnapshot {
       batteryTemperature: batteryTemperature,
       mobileDataMb: mobileDataMb,
       mobileDataDayMb: mobileDataDayMb,
-      mobileDataWeekMb: mobileDataWeekMb,
       mobileDataSimSlot: mobileDataSimSlot,
       mobileDataLimitMb: mobileDataLimitMb,
       networkTechnology: networkTechnology,

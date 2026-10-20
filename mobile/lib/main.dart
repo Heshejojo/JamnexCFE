@@ -162,15 +162,6 @@ class _DeviceAgentHomeState extends State<DeviceAgentHome> {
           },
         });
       }
-      if (snapshot.mobileDataWeekMb != null) {
-        pendingEvents.add({
-          'endpoint': '/device/consumption/',
-          'payload': {
-            'consumo_datos_movil': snapshot.mobileDataWeekMb,
-            'periodo': 'semanal',
-          },
-        });
-      }
       await _apiService.registerDevice(devicePayload);
       await _syncProvider.retry((item) async {
         final payload =
@@ -388,13 +379,6 @@ class _MobileDataHero extends StatelessWidget {
     return '${megabytes.toStringAsFixed(2)} MB';
   }
 
-  String _formatDataUsage(num? megabytes) {
-    if (megabytes == null) return 'No disponible';
-    return megabytes >= 1024
-        ? '${(megabytes / 1024).toStringAsFixed(2)} GB'
-        : '${megabytes.toStringAsFixed(2)} MB';
-  }
-
   String _formatGb(num? megabytes) {
     if (megabytes == null) return 'No disponible';
     return '${(megabytes / 1024).toStringAsFixed(2)} GB';
@@ -459,9 +443,6 @@ class _MobileDataHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Text(
-              'Últimos 7 días: ${_formatDataUsage(snapshot?.mobileDataWeekMb)}',
-              style: const TextStyle(color: Color(0xFFCCFBF1))),
         ],
       ),
     );
@@ -476,13 +457,6 @@ class _MonitoringPanel extends StatelessWidget {
   String _formatMb(num? megabytes) {
     if (megabytes == null) return 'No disponible';
     return '${megabytes.toStringAsFixed(2)} MB';
-  }
-
-  String _formatDataUsage(num? megabytes) {
-    if (megabytes == null) return 'No disponible';
-    return megabytes >= 1024
-        ? '${(megabytes / 1024).toStringAsFixed(2)} GB'
-        : '${megabytes.toStringAsFixed(2)} MB';
   }
 
   String _formatGb(num? megabytes) {
@@ -565,8 +539,6 @@ class _MonitoringPanel extends StatelessWidget {
             children: usingMobile
                 ? [
                     _detail('Consumo hoy', _formatMb(current?.mobileDataDayMb)),
-                    _detail('Últimos 7 días',
-                        _formatDataUsage(current?.mobileDataWeekMb)),
                     _detail('Límite', _formatGb(current?.mobileDataLimitMb)),
                     _detail('Tecnología',
                         current?.networkTechnology ?? 'No disponible'),

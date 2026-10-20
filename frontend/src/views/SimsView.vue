@@ -444,20 +444,37 @@ function formatDataAmount(value) {
 }
 
 const monthlyTotals = computed(() => {
-  const totals = new Map();
   const monthlyRecords = new Map();
+  const dailyTotals = new Map();
   for (const item of consumptionRecords.value) {
     if (item.sim == null || item.fecha?.slice(0, 7) !== selectedMonth.value) continue;
     const simId = Number(item.sim);
+    const deviceId = String(item.dispositivo ?? 'unknown');
+    const deviceKey = `${simId}:${deviceId}`;
     const amount = Number(item.consumo_datos_movil || 0);
     if (item.periodo === 'mensual') {
-      monthlyRecords.set(simId, amount);
-    } else if (item.periodo === 'diario' && !monthlyRecords.has(simId)) {
-      totals.set(simId, (totals.get(simId) || 0) + amount);
+      const current = monthlyRecords.get(deviceKey);
+      if (!current || new Date(item.fecha) > new Date(current.fecha)) {
+        monthlyRecords.set(deviceKey, { simId, amount, fecha: item.fecha });
+      }
+    } else if (item.periodo === 'diario') {
+      dailyTotals.set(deviceKey, {
+        simId,
+        amount: (dailyTotals.get(deviceKey)?.amount || 0) + amount,
+      });
     }
   }
-  for (const [simId, amount] of monthlyRecords) {
-    totals.set(simId, amount);
+
+  const totals = new Map();
+  for (const [deviceKey, daily] of dailyTotals) {
+    if (monthlyRecords.has(deviceKey)) continue;
+    totals.set(daily.simId, (totals.get(daily.simId) || 0) + daily.amount);
+  }
+  for (const monthly of monthlyRecords.values()) {
+    totals.set(
+      monthly.simId,
+      (totals.get(monthly.simId) || 0) + monthly.amount,
+    );
   }
   return totals;
 });

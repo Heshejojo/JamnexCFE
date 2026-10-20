@@ -163,7 +163,6 @@ class JamnexSyncWorker(
 		}
 
 		val dataSimSlot = defaultDataSimSlot(subscriptions)
-		val weeklyUsage = mobileUsageMb(7)
 		val monthDays = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
 		val monthlyUsage = mobileUsageMb(monthDays)
 		for (dayOffset in 0..7) {
@@ -177,19 +176,6 @@ class JamnexSyncWorker(
 					"periodo" to "diario",
 					"sim_slot" to (dataSimSlot ?: -1),
 					"fecha" to dayEndIso(dayOffset),
-				),
-				token,
-				devicePayload,
-			)
-		}
-		if (weeklyUsage != null) {
-			token = postDevice(
-				baseUrl,
-				"/device/consumption/",
-				json(
-					"consumo_datos_movil" to weeklyUsage,
-					"periodo" to "semanal",
-					"sim_slot" to (dataSimSlot ?: -1),
 				),
 				token,
 				devicePayload,
