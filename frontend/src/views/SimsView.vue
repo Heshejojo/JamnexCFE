@@ -249,7 +249,10 @@ const consumptionRecords = ref([]);
 
 const monthLabel = computed(() => {
   const [year, month] = selectedMonth.value.split('-').map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+  return new Date(year, month - 1, 1).toLocaleDateString('es-MX', {
+    month: 'long',
+    year: 'numeric',
+  });
 });
 const editingSim = ref(false);
 const savingEdit = ref(false);

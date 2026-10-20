@@ -163,9 +163,10 @@ class JamnexSyncWorker(
 		}
 
 		val dataSimSlot = defaultDataSimSlot(subscriptions)
-		val dailyUsage = mobileUsageMb(1)
 		val weeklyUsage = mobileUsageMb(7)
-		if (dailyUsage != null) {
+		for (dayOffset in 0..7) {
+			val dailyUsage = mobileUsageForDay(dayOffset)
+			if (dailyUsage == null) continue
 			token = postDevice(
 				baseUrl,
 				"/device/consumption/",
@@ -173,6 +174,7 @@ class JamnexSyncWorker(
 					"consumo_datos_movil" to dailyUsage,
 					"periodo" to "diario",
 					"sim_slot" to (dataSimSlot ?: -1),
+					"fecha" to dayEndIso(dayOffset),
 				),
 				token,
 				devicePayload,
@@ -323,6 +325,51 @@ class JamnexSyncWorker(
 			null
 		}
 	}
+
+	private fun mobileUsageForDay(dayOffset: Int): Double? {
+		return try {
+			val telephony = applicationContext.getSystemService(TelephonyManager::class.java)
+			val subscriberId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				null
+			} else {
+				telephony.subscriberId ?: return null
+			}
+			val end = Calendar.getInstance().apply {
+				add(Calendar.DAY_OF_YEAR, -dayOffset)
+				set(Calendar.HOUR_OF_DAY, 23)
+				set(Calendar.MINUTE, 59)
+				set(Calendar.SECOND, 59)
+				set(Calendar.MILLISECOND, 999)
+			}
+			val start = (end.clone() as Calendar).apply {
+				set(Calendar.HOUR_OF_DAY, 0)
+				set(Calendar.MINUTE, 0)
+				set(Calendar.SECOND, 0)
+				set(Calendar.MILLISECOND, 0)
+			}
+			val manager = applicationContext.getSystemService(NetworkStatsManager::class.java)
+			val bucket = manager.querySummaryForDevice(
+				ConnectivityManager.TYPE_MOBILE,
+				subscriberId,
+				start.timeInMillis,
+				end.timeInMillis,
+			)
+			(bucket.rxBytes + bucket.txBytes).toDouble() / (1024.0 * 1024.0)
+		} catch (_: Exception) {
+			null
+		}
+	}
+
+	private fun dayEndIso(dayOffset: Int): String =
+		java.time.Instant.ofEpochMilli(
+			Calendar.getInstance().apply {
+				add(Calendar.DAY_OF_YEAR, -dayOffset)
+				set(Calendar.HOUR_OF_DAY, 23)
+				set(Calendar.MINUTE, 59)
+				set(Calendar.SECOND, 59)
+				set(Calendar.MILLISECOND, 999)
+			}.timeInMillis,
+		).toString()
 
 	private fun deviceSerial(): String? {
 		val frameworkSerial = runCatching {

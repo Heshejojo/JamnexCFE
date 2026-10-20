@@ -21,7 +21,9 @@ import android.telephony.SubscriptionManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -175,6 +177,20 @@ class MainActivity : FlutterActivity() {
 					"jamnex_background_sync",
 					ExistingPeriodicWorkPolicy.UPDATE,
 					request,
+				)
+				val reconnectRequest = OneTimeWorkRequestBuilder<JamnexSyncWorker>()
+					.setConstraints(
+						Constraints.Builder()
+							.setRequiredNetworkType(NetworkType.CONNECTED)
+							.build(),
+					)
+					.setInitialDelay(1, TimeUnit.MINUTES)
+					.setInputData(workDataOf("base_url" to baseUrl))
+					.build()
+				WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+					"jamnex_reconnect_sync",
+					ExistingWorkPolicy.KEEP,
+					reconnectRequest,
 				)
 				result.success(null)
 				return@setMethodCallHandler
