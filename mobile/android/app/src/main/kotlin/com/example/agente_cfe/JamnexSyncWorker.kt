@@ -165,7 +165,7 @@ class JamnexSyncWorker(
 		val dataSimSlot = defaultDataSimSlot(subscriptions)
 		val monthDays = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
 		val monthlyUsage = mobileUsageMb(monthDays)
-		for (dayOffset in 0..7) {
+		for (dayOffset in 0 until monthDays) {
 			val dailyUsage = mobileUsageForDay(dayOffset)
 			if (dailyUsage == null) continue
 			token = postDevice(
