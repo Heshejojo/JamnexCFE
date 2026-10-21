@@ -18,6 +18,12 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -31,13 +37,40 @@ class JamnexSyncWorker(
 		val baseUrl = inputData.getString("base_url")?.trimEnd('/')
 		if (baseUrl.isNullOrBlank()) return Result.failure()
 
+		Log.i("JamnexSyncWorker", "Sincronización en segundo plano iniciada")
 		return try {
 			sync(baseUrl)
+			Log.i("JamnexSyncWorker", "Sincronización en segundo plano completada")
+			if (inputData.getBoolean("network_watchdog", false)) {
+				scheduleNextNetworkWatchdog(baseUrl)
+			}
 			Result.success()
 		} catch (error: Exception) {
 			Log.e("JamnexSyncWorker", "La sincronización en segundo plano falló", error)
 			Result.retry()
 		}
+	}
+
+	private fun scheduleNextNetworkWatchdog(baseUrl: String) {
+		val request = OneTimeWorkRequestBuilder<JamnexSyncWorker>()
+			.setConstraints(
+				Constraints.Builder()
+					.setRequiredNetworkType(NetworkType.CONNECTED)
+					.build(),
+			)
+			.setInitialDelay(2, java.util.concurrent.TimeUnit.HOURS)
+			.setInputData(
+				workDataOf(
+					"base_url" to baseUrl,
+					"network_watchdog" to true,
+				),
+			)
+			.build()
+		WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+			"jamnex_network_watchdog",
+			ExistingWorkPolicy.APPEND_OR_REPLACE,
+			request,
+		)
 	}
 
 	private fun sync(baseUrl: String) {
@@ -158,6 +191,7 @@ class JamnexSyncWorker(
 				),
 				token,
 				devicePayload,
+				badRequestFallback = json("sim_count" to subscriptions.size),
 				allowNotFound = true,
 			)
 		}
@@ -203,24 +237,37 @@ class JamnexSyncWorker(
 		currentToken: String,
 		devicePayload: JSONObject,
 		allowNotFound: Boolean = false,
+		badRequestFallback: JSONObject? = null,
 	): String {
-		val response = request(baseUrl, endpoint, payload, currentToken)
+		var effectivePayload = payload
+		var response = request(baseUrl, endpoint, effectivePayload, currentToken)
+		if (response.first == HttpURLConnection.HTTP_BAD_REQUEST && badRequestFallback != null) {
+			Log.w(
+				"JamnexSyncWorker",
+				"El backend rechazó el reporte extendido de SIM ($endpoint); se reintentará con el formato básico: ${response.second}",
+			)
+			effectivePayload = badRequestFallback
+			response = request(baseUrl, endpoint, effectivePayload, currentToken)
+		}
 		if (response.first in 200..299) return currentToken
 		if (allowNotFound && response.first == HttpURLConnection.HTTP_NOT_FOUND) {
 			Log.w("JamnexSyncWorker", "El backend aún no admite $endpoint; se omite este reporte")
 			return currentToken
 		}
-		if (response.first != HttpURLConnection.HTTP_UNAUTHORIZED) {
-			error("Backend respondió HTTP ${response.first} en $endpoint")
+		if (
+			response.first != HttpURLConnection.HTTP_UNAUTHORIZED &&
+			response.first != HttpURLConnection.HTTP_FORBIDDEN
+		) {
+			error("Backend respondió HTTP ${response.first} en $endpoint: ${response.second}")
 		}
 		val refreshedToken = registerDevice(baseUrl, devicePayload)
-		val retryResponse = request(baseUrl, endpoint, payload, refreshedToken)
+		val retryResponse = request(baseUrl, endpoint, effectivePayload, refreshedToken)
 		if (allowNotFound && retryResponse.first == HttpURLConnection.HTTP_NOT_FOUND) {
 			Log.w("JamnexSyncWorker", "El backend aún no admite $endpoint; se omite este reporte")
 			return refreshedToken
 		}
 		if (retryResponse.first !in 200..299) {
-			error("Backend respondió HTTP ${retryResponse.first} en $endpoint")
+			error("Backend respondió HTTP ${retryResponse.first} en $endpoint: ${retryResponse.second}")
 		}
 		return refreshedToken
 	}

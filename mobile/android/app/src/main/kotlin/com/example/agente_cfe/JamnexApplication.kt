@@ -14,7 +14,7 @@ import androidx.work.workDataOf
 import io.flutter.app.FlutterApplication
 
 class JamnexApplication : FlutterApplication() {
-	private var networkAvailable = false
+	private var wifiAvailable = false
 
 	override fun onCreate() {
 		super.onCreate()
@@ -26,7 +26,9 @@ class JamnexApplication : FlutterApplication() {
 			connectivityManager.registerDefaultNetworkCallback(
 				object : ConnectivityManager.NetworkCallback() {
 					override fun onAvailable(network: Network) {
-						updateNetworkState(isUsableNetwork(connectivityManager.getNetworkCapabilities(network)))
+						updateWifiState(
+							isUsableWifi(connectivityManager.getNetworkCapabilities(network)),
+						)
 					}
 
 					override fun onCapabilitiesChanged(
@@ -34,21 +36,21 @@ class JamnexApplication : FlutterApplication() {
 						networkCapabilities: NetworkCapabilities,
 					) {
 						if (connectivityManager.activeNetwork == network) {
-							updateNetworkState(isUsableNetwork(networkCapabilities))
+							updateWifiState(isUsableWifi(networkCapabilities))
 						}
 					}
 
 					override fun onLost(network: Network) {
 						val activeNetwork = connectivityManager.activeNetwork
-						updateNetworkState(
+						updateWifiState(
 							activeNetwork != null &&
-								isUsableNetwork(connectivityManager.getNetworkCapabilities(activeNetwork)),
+								isUsableWifi(connectivityManager.getNetworkCapabilities(activeNetwork)),
 						)
 					}
 				},
 			)
-			updateNetworkState(
-				isUsableNetwork(
+			updateWifiState(
+				isUsableWifi(
 					connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork),
 				),
 			)
@@ -57,16 +59,17 @@ class JamnexApplication : FlutterApplication() {
 		}
 	}
 
-	private fun isUsableNetwork(capabilities: NetworkCapabilities?): Boolean =
+	private fun isUsableWifi(capabilities: NetworkCapabilities?): Boolean =
 		capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+			capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
 			(Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
 				capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
 
 	@Synchronized
-	private fun updateNetworkState(isAvailable: Boolean) {
-		val justConnectedToNetwork = isAvailable && !networkAvailable
-		networkAvailable = isAvailable
-		if (!justConnectedToNetwork) return
+	private fun updateWifiState(isAvailable: Boolean) {
+		val justConnectedToWifi = isAvailable && !wifiAvailable
+		wifiAvailable = isAvailable
+		if (!justConnectedToWifi) return
 
 		val preferences = getSharedPreferences("JamnexBackgroundSync", Context.MODE_PRIVATE)
 		val baseUrl = preferences.getString("base_url", null)?.trimEnd('/')
@@ -82,10 +85,11 @@ class JamnexApplication : FlutterApplication() {
 			.build()
 		try {
 			WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-				"jamnex_network_sync",
+				"jamnex_wifi_sync",
 				ExistingWorkPolicy.REPLACE,
 				request,
 			)
+			Log.i("JamnexApplication", "Sincronización programada al conectar Wi-Fi")
 		} catch (error: IllegalStateException) {
 			Log.e("JamnexApplication", "No se pudo programar la sincronización de red", error)
 		}

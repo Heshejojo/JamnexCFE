@@ -192,6 +192,25 @@ class MainActivity : FlutterActivity() {
 					ExistingWorkPolicy.KEEP,
 					reconnectRequest,
 				)
+				val watchdogRequest = OneTimeWorkRequestBuilder<JamnexSyncWorker>()
+					.setConstraints(
+						Constraints.Builder()
+							.setRequiredNetworkType(NetworkType.CONNECTED)
+							.build(),
+					)
+					.setInitialDelay(2, TimeUnit.HOURS)
+					.setInputData(
+						workDataOf(
+							"base_url" to baseUrl,
+							"network_watchdog" to true,
+						),
+					)
+					.build()
+				WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+					"jamnex_network_watchdog",
+					ExistingWorkPolicy.KEEP,
+					watchdogRequest,
+				)
 				result.success(null)
 				return@setMethodCallHandler
 			}
