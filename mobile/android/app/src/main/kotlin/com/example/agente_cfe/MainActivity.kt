@@ -32,6 +32,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class MainActivity : FlutterActivity() {
 	private val channelName = "agente_cfe/sim"
@@ -315,8 +316,12 @@ class MainActivity : FlutterActivity() {
 		val totalStorageBytes = storage.totalBytes.toDouble()
 		val availableStorageBytes = storage.availableBytes.toDouble()
 		val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-		val batteryPercent = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-			?.takeUnless { it < 0 }
+		val batteryPercent = battery?.let {
+			val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+			val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+			if (level < 0 || scale <= 0) null
+			else (level * 100.0 / scale).roundToInt().coerceIn(0, 100)
+		}
 		val temperature = battery?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
 			?.takeUnless { it == Int.MIN_VALUE }?.div(10.0)
 

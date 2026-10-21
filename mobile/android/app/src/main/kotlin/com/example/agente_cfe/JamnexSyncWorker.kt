@@ -28,6 +28,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Calendar
+import kotlin.math.roundToInt
 
 class JamnexSyncWorker(
 	context: Context,
@@ -90,8 +91,12 @@ class JamnexSyncWorker(
 			null,
 			IntentFilter(Intent.ACTION_BATTERY_CHANGED),
 		)
-		val batteryLevel = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-			?.takeIf { it >= 0 }
+		val batteryLevel = battery?.let {
+			val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+			val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+			if (level < 0 || scale <= 0) null
+			else (level * 100.0 / scale).roundToInt().coerceIn(0, 100)
+		}
 		val batteryStatus = when (
 			battery?.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
 		) {
